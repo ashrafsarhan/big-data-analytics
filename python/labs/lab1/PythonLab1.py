@@ -112,6 +112,45 @@ matrix1*matrix2
 #d
 matrix1.dot(matrix2)
 
+"""
+5. Functions
+"""
+import math
+def CircleArea(radius): 
+    a = radius**2 * math.pi
+    return a
+print(CircleArea(10))
 
+#b
+def CircleArea(radius):
+    if radius > 0:
+      a = radius**2 * math.pi
+      return a
+    else:
+      print('Fetal error: The radius must be positive')
+      return None
+print(CircleArea(-10))
+
+#c
+def RectangleArea(base,height):
+    a = base * height
+    return a
+print(RectangleArea(10,10))
+
+#d
+"""
+ashraf@vostro-v130 ~/Desktop/liu/big-data-analytics/python/labs/lab1 $ python
+Python 2.7.12 |Anaconda 4.2.0 (64-bit)| (default, Jul  2 2016, 17:42:40) 
+[GCC 4.4.7 20120313 (Red Hat 4.4.7-1)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+Anaconda is brought to you by Continuum Analytics.
+Please check out: http://continuum.io/thanks and https://anaconda.org
+>>> import Geometry
+>>> Geometry.CircleArea(10)
+314.1592653589793
+>>> Geometry.RectangleArea(10,10)
+100
+>>> 
+"""
 
     
