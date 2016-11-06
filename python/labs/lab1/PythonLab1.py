@@ -1,7 +1,11 @@
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
+Created on Sun Nov  6 17:15:38 2016
 Introduction to Python - Computer Lab1
+@author: ashraf
 """
+
 """
 1. Strings
 """
