@@ -63,3 +63,27 @@ print(shortLong)
 zipall = zip(names, shortLong)
 for n in zipall:
     print('The name %s is a %s name' % (n[0], n[1]))
+    
+"""
+3. Dictionaries
+"""
+#a
+Amadeus = {'Sex':'M', 'Algebra':8, 'History':13}
+
+#b
+Rosa = {'Sex':'F', 'Algebra':19, 'History':22}
+Mona = {'Sex':'F', 'Algebra':6, 'History':27}
+Ludwig = {'Sex':'M', 'Algebra':9, 'History':5}
+
+#c
+students = {'Amadeus':Amadeus, 'Rosa':Rosa, 'Mona':Mona, 'Ludwig':Ludwig}
+print(students['Amadeus']['History'])
+
+#d
+Karl = {'Sex':'M', 'Algebra':14, 'History':10}
+students.update({'Karl':Karl})
+
+#e
+for key, value in students.iteritems():
+    print('Student %s scored %s on the Algebra exam and %s on the History exam' 
+          % (key, value['Algebra'], value['History']))
