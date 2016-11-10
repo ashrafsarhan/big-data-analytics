@@ -43,8 +43,9 @@ SELECT * FROM jbemployee;
 25 rows in set (0,00 sec)
 */
 
-#2
-mysql> SELECT jbdept.name AS dept_name FROM jbdept ORDER BY dept_name;
+--2
+SELECT jbdept.name AS dept_name FROM jbdept ORDER BY dept_name;
+/*
 +------------------+
 | dept_name        |
 +------------------+
@@ -69,9 +70,11 @@ mysql> SELECT jbdept.name AS dept_name FROM jbdept ORDER BY dept_name;
 | Women's          |
 +------------------+
 19 rows in set (0,00 sec)
+*/
 
-#3
-mysql> SELECT * FROM jbparts WHERE jbparts.qoh=0;
+--3
+SELECT * FROM jbparts WHERE jbparts.qoh=0;
+/*
 +----+-------------------+-------+--------+------+
 | id | name              | color | weight | qoh  |
 +----+-------------------+-------+--------+------+
@@ -81,9 +84,11 @@ mysql> SELECT * FROM jbparts WHERE jbparts.qoh=0;
 | 14 | paper tape punch  | black |    147 |    0 |
 +----+-------------------+-------+--------+------+
 4 rows in set (0,00 sec)
+*/
 
-#4
-mysql> SELECT * FROM jbemployee WHERE jbemployee.salary BETWEEN 9000 AND 10000;
+--4
+SELECT * FROM jbemployee WHERE jbemployee.salary BETWEEN 9000 AND 10000;
+/*
 +-----+----------------+--------+---------+-----------+-----------+
 | id  | name           | salary | manager | birthyear | startyear |
 +-----+----------------+--------+---------+-----------+-----------+
@@ -93,10 +98,11 @@ mysql> SELECT * FROM jbemployee WHERE jbemployee.salary BETWEEN 9000 AND 10000;
 | 129 | Thomas, Tom    |  10000 |     199 |      1941 |      1962 |
 +-----+----------------+--------+---------+-----------+-----------+
 4 rows in set (0,00 sec)
+*/
 
-
-#5
-mysql> SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age FROM jbemployee AS emp;
+--5
+SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age FROM jbemployee AS emp;
+/*
 +------+--------------------+------+
 | id   | name               | age  |
 +------+--------------------+------+
@@ -127,16 +133,17 @@ mysql> SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age FROM jbempl
 | 5219 | Schwarz, Jason B.  |   15 |
 +------+--------------------+------+
 25 rows in set (0,00 sec)
+*/
+
+--6
+SELECT * FROM jbemployee AS emp WHERE emp.name LIKE '%son';
+
+--Empty set (0,00 sec)
 
 
-#6
-mysql> SELECT * FROM jbemployee AS emp WHERE emp.name LIKE '%son';
-Empty set (0,00 sec)
-
-
-#7
-
-mysql> SELECT * FROM jbitem AS itm WHERE itm.supplier = (SELECT sup.id FROM jbsupplier as sup WHERE sup.name LIKE 'Fisher-Price');
+--7
+SELECT * FROM jbitem AS itm WHERE itm.supplier = (SELECT sup.id FROM jbsupplier as sup WHERE sup.name LIKE 'Fisher-Price');
+/*
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
 +-----+-----------------+------+-------+------+----------+
@@ -145,11 +152,11 @@ mysql> SELECT * FROM jbitem AS itm WHERE itm.supplier = (SELECT sup.id FROM jbsu
 | 119 | Squeeze Ball    |   49 |   250 |  400 |       89 |
 +-----+-----------------+------+-------+------+----------+
 3 rows in set (0,00 sec)
+*/
 
-
-#8
-
-mysql> SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier FROM jbitem AS itm, jbsupplier AS sup WHERE itm.supplier = sup.id AND sup.name LIKE 'Fisher-Price';
+--8
+SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier FROM jbitem AS itm, jbsupplier AS sup WHERE itm.supplier = sup.id AND sup.name LIKE 'Fisher-Price';
+/*
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
 +-----+-----------------+------+-------+------+----------+
@@ -158,12 +165,11 @@ mysql> SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier FROM 
 | 119 | Squeeze Ball    |   49 |   250 |  400 |       89 |
 +-----+-----------------+------+-------+------+----------+
 3 rows in set (0,16 sec)
+*/
 
-
-
-#9
-
-mysql> SELECT * FROM jbcity AS cty WHERE cty.id IN (SELECT sup.city FROM jbsupplier AS sup);
+--9
+SELECT * FROM jbcity AS cty WHERE cty.id IN (SELECT sup.city FROM jbsupplier AS sup);
+/*
 +-----+----------------+-------+
 | id  | name           | state |
 +-----+----------------+-------+
@@ -184,9 +190,11 @@ mysql> SELECT * FROM jbcity AS cty WHERE cty.id IN (SELECT sup.city FROM jbsuppl
 | 981 | Seattle        | Wash  |
 +-----+----------------+-------+
 15 rows in set (0,00 sec)
+*/
 
-#10
-mysql> SELECT prts.name, prts.color FROM jbparts AS prts WHERE prts.weight > (SELECT prts.weight FROM jbparts AS prts WHERE prts.name = 'card reader');
+--10
+SELECT prts.name, prts.color FROM jbparts AS prts WHERE prts.weight > (SELECT prts.weight FROM jbparts AS prts WHERE prts.name = 'card reader');
+/*
 +--------------+--------+
 | name         | color  |
 +--------------+--------+
@@ -196,10 +204,11 @@ mysql> SELECT prts.name, prts.color FROM jbparts AS prts WHERE prts.weight > (SE
 | card punch   | gray   |
 +--------------+--------+
 4 rows in set (0,00 sec)
+*/
 
-
-#11
-mysql> SELECT prts.name, prts.color FROM jbparts AS prts, jbparts AS prts2 WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
+--11
+SELECT prts.name, prts.color FROM jbparts AS prts, jbparts AS prts2 WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
+/*
 +--------------+--------+
 | name         | color  |
 +--------------+--------+
@@ -209,24 +218,26 @@ mysql> SELECT prts.name, prts.color FROM jbparts AS prts, jbparts AS prts2 WHERE
 | card punch   | gray   |
 +--------------+--------+
 4 rows in set (0,00 sec)
+*/
 
-
-
-#12
-mysql> SELECT avg(prts.weight) AS avg_weight FROM jbparts AS prts WHERE prts.color = 'black';
+--12
+SELECT avg(prts.weight) AS avg_weight FROM jbparts AS prts WHERE prts.color = 'black';
+/*
 +------------+
 | avg_weight |
 +------------+
 |   347.2500 |
 +------------+
 1 row in set (0,00 sec)
+*/
 
-#13
-mysql> SELECT sup.name, SUM(prts.weight*prts.qoh) AS total_weight 
-    -> FROM jb.jbparts AS prts, jbsupplier AS sup, jbsupply AS sp, jbcity AS cty 
-    -> WHERE prts.id = sp.part AND sup.id = sp.supplier 
-    -> AND sup.city = cty.id AND cty.state = 'Mass'
-    -> GROUP BY sup.id;
+--13
+SELECT sup.name, SUM(prts.weight*prts.qoh) AS total_weight 
+FROM jb.jbparts AS prts, jbsupplier AS sup, jbsupply AS sp, jbcity AS cty 
+WHERE prts.id = sp.part AND sup.id = sp.supplier 
+AND sup.city = cty.id AND cty.state = 'Mass'
+GROUP BY sup.id;
+/*
 +--------------+--------------+
 | name         | total_weight |
 +--------------+--------------+
@@ -234,30 +245,36 @@ mysql> SELECT sup.name, SUM(prts.weight*prts.qoh) AS total_weight
 | DEC          |         4470 |
 +--------------+--------------+
 2 rows in set (0,00 sec)
+*/
 
-#14
-mysql> CREATE TABLE jbitem_replica
-    -> (
-    -> `id` INT(11),
-    -> `name` VARCHAR(20),
-    -> `price` INT(11),
-    -> `qoh` INT(10) UNSIGNED,
-    -> `dept` INT(11),
-    -> `supplier` INT(11),
-    -> PRIMARY KEY (`id`),
-    -> FOREIGN KEY (`dept`) REFERENCES `jbdept`(`id`),
-    -> FOREIGN KEY (`supplier`) REFERENCES `jbsupplier`(`id`)
-    -> );
-Query OK, 0 rows affected (0,47 sec)
+--14
+CREATE TABLE jbitem_replica
+    (
+    `id` INT(11),
+    `name` VARCHAR(20),
+    `price` INT(11),
+    `qoh` INT(10) UNSIGNED,
+    `dept` INT(11),
+    `supplier` INT(11),
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`dept`) REFERENCES `jbdept`(`id`),
+    FOREIGN KEY (`supplier`) REFERENCES `jbsupplier`(`id`)
+    );
 
-mysql> INSERT INTO jb.jbitem_replica(`id`, `name`, `price`, `qoh`, `dept`, `supplier`)
-    ->   SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
-    ->   FROM jb.jbitem AS itm 
-    ->   WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
+--Query OK, 0 rows affected (0,47 sec)
+
+
+INSERT INTO jb.jbitem_replica(`id`, `name`, `price`, `qoh`, `dept`, `supplier`)
+    SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
+    FROM jb.jbitem AS itm 
+    WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
+/*
 Query OK, 14 rows affected (0,14 sec)
 Records: 14  Duplicates: 0  Warnings: 0
-   
-mysql> SELECT * FROM jb.jbitem_replica;
+*/
+ 
+SELECT * FROM jb.jbitem_replica;
+/*
 +-----+-----------------+-------+------+------+----------+
 | id  | name            | price | qoh  | dept | supplier |
 +-----+-----------------+-------+------+------+----------+
@@ -277,15 +294,18 @@ mysql> SELECT * FROM jb.jbitem_replica;
 | 258 | Shirt           |   650 | 1200 |   58 |       33 |
 +-----+-----------------+-------+------+------+----------+
 14 rows in set (0,00 sec)
+*/
 
-#15
-mysql> CREATE VIEW jbitem_view AS
-    ->      SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
-    ->      FROM jb.jbitem AS itm    
-    ->      WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
-Query OK, 0 rows affected (0,06 sec)
+--15
+CREATE VIEW jbitem_view AS
+    SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
+    FROM jb.jbitem AS itm    
+    WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
+
+--Query OK, 0 rows affected (0,06 sec)
       
-mysql> SELECT * FROM jb.jbitem_view;
+SELECT * FROM jb.jbitem_view;
+/*
 +-----+-----------------+-------+------+------+----------+
 | id  | name            | price | qoh  | dept | supplier |
 +-----+-----------------+-------+------+------+----------+
@@ -305,19 +325,24 @@ mysql> SELECT * FROM jb.jbitem_view;
 | 258 | Shirt           |   650 | 1200 |   58 |       33 |
 +-----+-----------------+-------+------+------+----------+
 14 rows in set (0,00 sec)
+*/
 
-#16
+--16
+/*
 A view is a virtual dynamic table.The difference between a view and a table (static) is that views are definitions built on top of other tables (or views), and do not hold data themselves. If data is changing in the underlying table, the same change is reflected in the view.
+*/
 
-#17
-mysql> CREATE VIEW jbdebit_view AS
-    ->      SELECT dbt.id, dbt.account, SUM(s.quantity*itm.price) AS total_cost
-    ->      FROM   jb.jbdebit AS dbt, jb.jbsale AS s, jb.jbitem AS itm
-    ->      WHERE  dbt.id = s.debit AND s.item = itm.id
-    ->      GROUP BY dbt.id;
-Query OK, 0 rows affected (0,06 sec)
+--17
+CREATE VIEW jbdebit_view AS
+    SELECT dbt.id, dbt.account, SUM(s.quantity*itm.price) AS total_cost
+    FROM   jb.jbdebit AS dbt, jb.jbsale AS s, jb.jbitem AS itm
+    WHERE  dbt.id = s.debit AND s.item = itm.id
+    GROUP BY dbt.id;
+
+--Query OK, 0 rows affected (0,06 sec)
    
-mysql> SELECT * FROM jb.jbdebit_view;
+SELECT * FROM jb.jbdebit_view;
+/*
 +--------+----------+------------+
 | id     | account  | total_cost |
 +--------+----------+------------+
@@ -329,18 +354,22 @@ mysql> SELECT * FROM jb.jbdebit_view;
 | 100594 | 12591815 |       3295 |
 +--------+----------+------------+
 6 rows in set (0,00 sec)
+*/
 
-#18
-#Using INNER JOIN returns all rows when there is at least one match in both tables.
-mysql> CREATE VIEW jbdebit_view_2 AS
-    ->      SELECT dbt.id, dbt.account, SUM(s.quantity*itm.price) AS total_cost
-    ->      FROM jb.jbdebit AS dbt
-    ->      JOIN (jb.jbsale AS s) ON (dbt.id = s.debit)
-    ->      JOIN (jb.jbitem AS itm) ON (s.item = itm.id)
-    ->      GROUP BY dbt.id;
-Query OK, 0 rows affected (0,07 sec)
+--18
+--Using INNER JOIN returns all rows when there is at least one match in both tables.
+
+CREATE VIEW jbdebit_view_2 AS
+    SELECT dbt.id, dbt.account, SUM(s.quantity*itm.price) AS total_cost
+    FROM jb.jbdebit AS dbt
+    JOIN (jb.jbsale AS s) ON (dbt.id = s.debit)
+    JOIN (jb.jbitem AS itm) ON (s.item = itm.id)
+    GROUP BY dbt.id;
+
+--Query OK, 0 rows affected (0,07 sec)
      
-mysql> SELECT * FROM jb.jbdebit_view_2;
+SELECT * FROM jb.jbdebit_view_2;
+/*
 +--------+----------+------------+
 | id     | account  | total_cost |
 +--------+----------+------------+
@@ -352,41 +381,44 @@ mysql> SELECT * FROM jb.jbdebit_view_2;
 | 100594 | 12591815 |       3295 |
 +--------+----------+------------+
 6 rows in set (0,00 sec)
+*/
 
-#19
-#Modify the supplier column in jbitem table to be nullable.
+--19
+--Modify the supplier column in jbitem table to be nullable.
 
 ALTER TABLE `jbitem` 
 MODIFY COLUMN `supplier` INT(11);
 
-#Drop the current fk_item_supplier key with ON DELETE RESTRICT rule.
+--Drop the current fk_item_supplier key with ON DELETE RESTRICT rule.
 
 ALTER TABLE `jbitem` 
 DROP FOREIGN KEY `fk_item_supplier`;
 
-#Drop the current fk_item_supplier key with ON DELETE SET NULL to set rule to #set Null instead of the deleted supplier.   
+--Drop the current fk_item_supplier key with ON DELETE SET NULL to set rule to #set Null instead of the deleted supplier.   
                                  
 ALTER TABLE `jbitem`
 ADD CONSTRAINT `fk_item_supplier`
 FOREIGN KEY (`supplier`) REFERENCES `jbsupplier` (`id`)
 ON DELETE SET NULL;
 
-#Delete the suppliers in Los Angeles
+--Delete the suppliers in Los Angeles
 
 DELETE FROM  jb.jbsupplier
        WHERE jb.jbsupplier.city = (SELECT cty.id 
 								    FROM jb.jbcity AS cty 
 									WHERE cty.name = 'Los Angeles'); 
 
-#20
-mysql> CREATE VIEW jbsale_supply(`supplier`, `item`, `delivered_qty`, `sold_qty`) AS
-    -> SELECT sup.name, itm.name, itm.qoh, sale.quantity
-    -> FROM jbsupplier AS sup
-    -> JOIN (jbitem AS itm) ON (sup.id = itm.supplier)
-    -> LEFT JOIN (jbsale AS sale) ON (sale.item = itm.id);
-Query OK, 0 rows affected (0,06 sec)
+--20
+CREATE VIEW jbsale_supply(`supplier`, `item`, `delivered_qty`, `sold_qty`) AS
+    SELECT sup.name, itm.name, itm.qoh, sale.quantity
+    FROM jbsupplier AS sup
+    JOIN (jbitem AS itm) ON (sup.id = itm.supplier)
+    LEFT JOIN (jbsale AS sale) ON (sale.item = itm.id);
 
-mysql> SELECT * FROM jb.jbsale_supply;
+--Query OK, 0 rows affected (0,06 sec)
+
+SELECT * FROM jb.jbsale_supply;
+/*
 +--------------+-----------------+---------------+----------+
 | supplier     | item            | delivered_qty | sold_qty |
 +--------------+-----------------+---------------+----------+
@@ -409,6 +441,6 @@ mysql> SELECT * FROM jb.jbsale_supply;
 | Levi-Strauss | Shirt           |          1200 |        1 |
 | Levi-Strauss | Boy's Jean Suit |           500 |     NULL |
 +--------------+-----------------+---------------+----------+
-
+*/
 
 
