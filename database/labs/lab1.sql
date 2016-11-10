@@ -9,7 +9,9 @@
 */
                                                                                                          
 --1
-SELECT * FROM jbemployee;
+SELECT * 
+FROM jbemployee;
+
 /*
 +------+--------------------+--------+---------+-----------+-----------+
 | id   | name               | salary | manager | birthyear | startyear |
@@ -44,7 +46,10 @@ SELECT * FROM jbemployee;
 */
 
 --2
-SELECT jbdept.name AS dept_name FROM jbdept ORDER BY dept_name;
+SELECT jbdept.name AS dept_name 
+FROM jbdept 
+ORDER BY dept_name;
+
 /*
 +------------------+
 | dept_name        |
@@ -73,7 +78,10 @@ SELECT jbdept.name AS dept_name FROM jbdept ORDER BY dept_name;
 */
 
 --3
-SELECT * FROM jbparts WHERE jbparts.qoh=0;
+SELECT * 
+FROM jbparts 
+WHERE jbparts.qoh=0;
+
 /*
 +----+-------------------+-------+--------+------+
 | id | name              | color | weight | qoh  |
@@ -87,7 +95,9 @@ SELECT * FROM jbparts WHERE jbparts.qoh=0;
 */
 
 --4
-SELECT * FROM jbemployee WHERE jbemployee.salary BETWEEN 9000 AND 10000;
+SELECT * FROM jbemployee 
+WHERE jbemployee.salary BETWEEN 9000 AND 10000;
+
 /*
 +-----+----------------+--------+---------+-----------+-----------+
 | id  | name           | salary | manager | birthyear | startyear |
@@ -101,7 +111,9 @@ SELECT * FROM jbemployee WHERE jbemployee.salary BETWEEN 9000 AND 10000;
 */
 
 --5
-SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age FROM jbemployee AS emp;
+SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age 
+FROM jbemployee AS emp;
+
 /*
 +------+--------------------+------+
 | id   | name               | age  |
@@ -136,13 +148,20 @@ SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age FROM jbemployee AS
 */
 
 --6
-SELECT * FROM jbemployee AS emp WHERE emp.name LIKE '%son';
+SELECT * 
+FROM jbemployee AS emp 
+WHERE emp.name LIKE '%son';
 
 --Empty set (0,00 sec)
 
 
 --7
-SELECT * FROM jbitem AS itm WHERE itm.supplier = (SELECT sup.id FROM jbsupplier as sup WHERE sup.name LIKE 'Fisher-Price');
+SELECT * 
+FROM jbitem AS itm 
+WHERE itm.supplier = (SELECT sup.id 
+                      FROM jbsupplier as sup 
+                      WHERE sup.name LIKE 'Fisher-Price');
+
 /*
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
@@ -155,7 +174,10 @@ SELECT * FROM jbitem AS itm WHERE itm.supplier = (SELECT sup.id FROM jbsupplier 
 */
 
 --8
-SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier FROM jbitem AS itm, jbsupplier AS sup WHERE itm.supplier = sup.id AND sup.name LIKE 'Fisher-Price';
+SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier 
+FROM jbitem AS itm, jbsupplier AS sup 
+WHERE itm.supplier = sup.id AND sup.name LIKE 'Fisher-Price';
+
 /*
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
@@ -168,7 +190,10 @@ SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier FROM jbitem 
 */
 
 --9
-SELECT * FROM jbcity AS cty WHERE cty.id IN (SELECT sup.city FROM jbsupplier AS sup);
+SELECT * FROM jbcity AS cty 
+WHERE cty.id IN (SELECT sup.city 
+                 FROM jbsupplier AS sup);
+
 /*
 +-----+----------------+-------+
 | id  | name           | state |
@@ -193,7 +218,12 @@ SELECT * FROM jbcity AS cty WHERE cty.id IN (SELECT sup.city FROM jbsupplier AS 
 */
 
 --10
-SELECT prts.name, prts.color FROM jbparts AS prts WHERE prts.weight > (SELECT prts.weight FROM jbparts AS prts WHERE prts.name = 'card reader');
+SELECT prts.name, prts.color 
+FROM jbparts AS prts 
+WHERE prts.weight > (SELECT prts.weight 
+                     FROM jbparts AS prts 
+                     WHERE prts.name = 'card reader');
+
 /*
 +--------------+--------+
 | name         | color  |
@@ -207,7 +237,10 @@ SELECT prts.name, prts.color FROM jbparts AS prts WHERE prts.weight > (SELECT pr
 */
 
 --11
-SELECT prts.name, prts.color FROM jbparts AS prts, jbparts AS prts2 WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
+SELECT prts.name, prts.color 
+FROM jbparts AS prts, jbparts AS prts2 
+WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
+
 /*
 +--------------+--------+
 | name         | color  |
@@ -221,7 +254,9 @@ SELECT prts.name, prts.color FROM jbparts AS prts, jbparts AS prts2 WHERE prts2.
 */
 
 --12
-SELECT avg(prts.weight) AS avg_weight FROM jbparts AS prts WHERE prts.color = 'black';
+SELECT avg(prts.weight) AS avg_weight 
+FROM jbparts AS prts WHERE prts.color = 'black';
+
 /*
 +------------+
 | avg_weight |
@@ -237,6 +272,7 @@ FROM jb.jbparts AS prts, jbsupplier AS sup, jbsupply AS sp, jbcity AS cty
 WHERE prts.id = sp.part AND sup.id = sp.supplier 
 AND sup.city = cty.id AND cty.state = 'Mass'
 GROUP BY sup.id;
+
 /*
 +--------------+--------------+
 | name         | total_weight |
@@ -268,12 +304,15 @@ INSERT INTO jb.jbitem_replica(`id`, `name`, `price`, `qoh`, `dept`, `supplier`)
     SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
     FROM jb.jbitem AS itm 
     WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
+
 /*
 Query OK, 14 rows affected (0,14 sec)
 Records: 14  Duplicates: 0  Warnings: 0
 */
  
-SELECT * FROM jb.jbitem_replica;
+SELECT * 
+FROM jb.jbitem_replica;
+
 /*
 +-----+-----------------+-------+------+------+----------+
 | id  | name            | price | qoh  | dept | supplier |
@@ -300,11 +339,14 @@ SELECT * FROM jb.jbitem_replica;
 CREATE VIEW jbitem_view AS
     SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
     FROM jb.jbitem AS itm    
-    WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
+    WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) 
+                         FROM jb.jbitem);
 
 --Query OK, 0 rows affected (0,06 sec)
       
-SELECT * FROM jb.jbitem_view;
+SELECT * 
+FROM jb.jbitem_view;
+
 /*
 +-----+-----------------+-------+------+------+----------+
 | id  | name            | price | qoh  | dept | supplier |
@@ -341,7 +383,9 @@ CREATE VIEW jbdebit_view AS
 
 --Query OK, 0 rows affected (0,06 sec)
    
-SELECT * FROM jb.jbdebit_view;
+SELECT * 
+FROM jb.jbdebit_view;
+
 /*
 +--------+----------+------------+
 | id     | account  | total_cost |
@@ -368,7 +412,9 @@ CREATE VIEW jbdebit_view_2 AS
 
 --Query OK, 0 rows affected (0,07 sec)
      
-SELECT * FROM jb.jbdebit_view_2;
+SELECT * 
+FROM jb.jbdebit_view_2;
+
 /*
 +--------+----------+------------+
 | id     | account  | total_cost |
@@ -417,7 +463,9 @@ CREATE VIEW jbsale_supply(`supplier`, `item`, `delivered_qty`, `sold_qty`) AS
 
 --Query OK, 0 rows affected (0,06 sec)
 
-SELECT * FROM jb.jbsale_supply;
+SELECT * 
+FROM jb.jbsale_supply;
+
 /*
 +--------------+-----------------+---------------+----------+
 | supplier     | item            | delivered_qty | sold_qty |
