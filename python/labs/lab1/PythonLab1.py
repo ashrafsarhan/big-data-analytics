@@ -101,7 +101,7 @@ list2 = [5,6,9]
 list1*list2 #TypeError: can't multiply sequence by non-int of type 'list'
 
 #b
-from scipy import array, matrix
+from scipy import array
 array1 = array(list1)
 array2 = array(list2)
 array1*array2 #array([ 5, 18, 36])
@@ -109,9 +109,12 @@ array1*array2 #array([ 5, 18, 36])
 #c
 matrix1 = array([array1,array2])
 print(matrix1)
-matrix2 = matrix([[1,0,0],[0,2,0],[0,0,3]])
+matrix2 = array([[1,0,0],[0,2,0],[0,0,3]])
 print(matrix2)
 matrix1*matrix2
+"""
+ValueError: operands could not be broadcast together with shapes (2,3) (3,3) 
+"""
 
 #d
 matrix1.dot(matrix2)
