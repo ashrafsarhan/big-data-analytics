@@ -160,7 +160,7 @@ SELECT *
 FROM jbitem AS itm 
 WHERE itm.supplier = (SELECT sup.id 
                       FROM jbsupplier as sup 
-                      WHERE sup.name LIKE 'Fisher-Price');
+                      WHERE sup.name = 'Fisher-Price');
 
 /*
 +-----+-----------------+------+-------+------+----------+
@@ -176,7 +176,7 @@ WHERE itm.supplier = (SELECT sup.id
 --8
 SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier 
 FROM jbitem AS itm, jbsupplier AS sup 
-WHERE itm.supplier = sup.id AND sup.name LIKE 'Fisher-Price';
+WHERE itm.supplier = sup.id AND sup.name = 'Fisher-Price';
 
 /*
 +-----+-----------------+------+-------+------+----------+
@@ -267,7 +267,7 @@ FROM jbparts AS prts WHERE prts.color = 'black';
 */
 
 --13
-SELECT sup.name, SUM(prts.weight*prts.qoh) AS total_weight 
+SELECT sup.name, SUM(prts.weight*sp.quan) AS total_weight 
 FROM jb.jbparts AS prts, jbsupplier AS sup, jbsupply AS sp, jbcity AS cty 
 WHERE prts.id = sp.part AND sup.id = sp.supplier 
 AND sup.city = cty.id AND cty.state = 'Mass'
@@ -277,8 +277,8 @@ GROUP BY sup.id;
 +--------------+--------------+
 | name         | total_weight |
 +--------------+--------------+
-| Fisher-Price |         3170 |
-| DEC          |         4470 |
+| Fisher-Price |      1135000 |
+| DEC          |         3120 |
 +--------------+--------------+
 2 rows in set (0,00 sec)
 */

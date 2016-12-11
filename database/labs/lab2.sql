@@ -1,3 +1,4 @@
+--3 We have to initialize the bonus attribute to a DEFAULT value = 0. so it's not neccessary to add the bonus value when you insert a new record
 CREATE TABLE jbmanager
     (
     `id` INT(11),
@@ -27,6 +28,7 @@ ALTER TABLE `jbdept`
 ADD CONSTRAINT `fk_dept_mgr`
 FOREIGN KEY (`manager`) REFERENCES `jbmanager` (`id`);
 
+--4 
 SET SQL_SAFE_UPDATES = 0;
 UPDATE `jbmanager` 
   SET bonus = bonus + 10000 
