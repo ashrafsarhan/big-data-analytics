@@ -16,18 +16,18 @@ args = parser.parse_args()
 iFile = args.input
 oFile = args.output
 years =  args.time.split(":")
-min_year = int(years[0])
-max_year = int(years[1])
+fromYear = int(years[0])
+toYear = int(years[1])
 
 start = time.time()
 print('Running Python MinMaxTempExtractor:\nFrom %s To %s\nInput file: %s\nOutput file: %s' 
-      % (min_year, max_year, iFile, oFile))
+      % (fromYear, toYear, iFile, oFile))
 temp_dict = dict()
 with open(iFile) as f:
     for l in f:
         line = l.split(";")
         year = int(line[1].split("-")[0])
-        if year >= min_year and year <= max_year:
+        if year >= fromYear and year <= toYear:
             temp = temp_dict.get(year)
             station = line[0];
             curr_temp = float(line[3]);
