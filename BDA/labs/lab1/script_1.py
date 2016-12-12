@@ -37,6 +37,11 @@ with open(file_in) as f:
                     temp[1][1] = curr_temp
 #close the file after reading the lines.
 f.close() 
+
+#sort temperatures descending by max temp 
+sorted_temp = temp_dict.items()               
+sorted_temp.sort(key=lambda x: x[1][1], reverse=True)  
+
 #write the output to file.  
 f = open(file_out,'wb+')
 for k, v in temp_dict.items():
