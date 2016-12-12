@@ -42,14 +42,11 @@ f.close()
 sorted_temp = temp_dict.items()               
 sorted_temp.sort(key=lambda x: x[1][1], reverse=True)  
 
-#write the output to file.  
-f = open(file_out,'wb+')
-for k, v in temp_dict.items():
-    #python will convert \n to os.linesep
-    f.write('%s,%s,%s,%s,%s\n' % (k, v.get('min').get('station'), 
-                               v.get('min').get('value'), 
-                               v.get('max').get('station'), 
-                               v.get('max').get('value')))
+#write the output to file.
+with open(file_out,'wb+') as f:
+    for i in sorted_temp:
+        #python will convert \n to os.linesep
+        f.write('%s,%s,%s,%s,%s\n' % (i[0], i[1][0][0], i[1][0][1], i[1][1][0], i[1][1][1]))
 #close the file after writting the lines.  
 f.close()
 end = time.time()
