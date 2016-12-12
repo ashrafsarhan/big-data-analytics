@@ -40,7 +40,7 @@ f.close()
 
 #sort temperatures descending by max temp 
 sorted_temp = temp_dict.items()               
-sorted_temp.sort(key=lambda x: x[1][1], reverse=True)  
+sorted_temp.sort(key=lambda x: x[1][1][1], reverse=True)  
 
 #write the output to file.
 with open(file_out,'wb+') as f:
