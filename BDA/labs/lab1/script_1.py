@@ -5,17 +5,25 @@ Created on Sun Dec 11 21:27:34 2016
 
 @author: ashraf
 """
-import sys, time
+import time, argparse
+
+parser = argparse.ArgumentParser(description='MinMaxTempExtractor')
+parser.add_argument('-o', '--output', help='Output file', default='out_temp.csv')
+requiredNamed = parser.add_argument_group('Required arguments')
+requiredNamed.add_argument('-t', '--time', help='Time interval in years ex. 2005:2010', required=True)
+requiredNamed.add_argument('-i', '--input', help='Input file', required=True)
+args = parser.parse_args()
+iFile = args.input
+oFile = args.output
+years =  args.time.split(":")
+min_year = int(years[0])
+max_year = int(years[1])
 
 start = time.time()
-min_year = int(sys.argv[1])
-max_year = int(sys.argv[2])
-file_in = sys.argv[3]
-file_out = sys.argv[4]
-print('Running python script for:\nmin_year: %s\nmax_year: %s\nInput file: %s\nOutput file: %s' 
-      % (min_year, max_year, file_in, file_out))
+print('Running Python MinMaxTempExtractor:\nFrom %s To %s\nInput file: %s\nOutput file: %s' 
+      % (min_year, max_year, iFile, oFile))
 temp_dict = dict()
-with open(file_in) as f:
+with open(iFile) as f:
     for l in f:
         line = l.split(";")
         year = int(line[1].split("-")[0])
@@ -43,7 +51,7 @@ sorted_temp = temp_dict.items()
 sorted_temp.sort(key=lambda x: x[1][1][1], reverse=True)  
 
 #write the output to file.
-with open(file_out,'wb+') as f:
+with open(oFile,'wb+') as f:
     for i in sorted_temp:
         #python will convert \n to os.linesep
         f.write('%s,%s,%s,%s,%s\n' % (i[0], i[1][0][0], i[1][0][1], i[1][1][0], i[1][1][1]))
