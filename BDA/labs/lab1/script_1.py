@@ -24,8 +24,8 @@ with open(file_in) as f:
             station = line[0];
             curr_temp = float(line[3]);
             if not temp:
-                #1st tuple for min temp and 2nd tuple for max temp
-                temp_dict[year] = [(station, curr_temp), (station, curr_temp)]
+                #1st list for min temp and 2nd list for max temp
+                temp_dict[year] = [[station, curr_temp], [station, curr_temp]]
             else:
                 min = float(temp[0][1])
                 max = float(temp[1][1])
