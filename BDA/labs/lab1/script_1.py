@@ -24,17 +24,17 @@ with open(file_in) as f:
             station = line[0];
             curr_temp = float(line[3]);
             if not temp:
-                temp_dict[year] = {'min':{'station':station, 'value':curr_temp}, 
-                'max':{'station':station, 'value':curr_temp}}
+                #1st tuple for min temp and 2nd tuple for max temp
+                temp_dict[year] = [(station, curr_temp), (station, curr_temp)]
             else:
-                min = float(temp.get('min').get('value'))
-                max = float(temp.get('max').get('value'))
+                min = float(temp[0][1])
+                max = float(temp[1][1])
                 if curr_temp < min:
-                    temp.get('min')['station'] = station
-                    temp.get('min')['value'] = curr_temp
+                    temp[0][0] = station
+                    temp[0][1] = curr_temp
                 if curr_temp > max:
-                    temp.get('max')['station'] = station
-                    temp.get('max')['value'] = curr_temp
+                    temp[1][0] = station
+                    temp[1][1] = curr_temp
 #close the file after reading the lines.
 f.close() 
 #write the output to file.  
