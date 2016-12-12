@@ -6,7 +6,7 @@ Created on Mon Dec 12 10:31:18 2016
 @author: ashraf
 """
 temp_dict = dict()
-#1st tuple is min and 2nd tuple for max
+#1st tuple for min temp and 2nd tuple for max temp
 temp_dict[2000] = [(12345, 1.1), (12345, 2.13)]
 temp_dict[2001] = [(12345, 1.1), (12345, 4.12)]
 temp_dict[2002] = [(12345, 1.1), (12345, 7.11)]
