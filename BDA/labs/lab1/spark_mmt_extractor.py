@@ -8,11 +8,11 @@ Created on Mon Dec 12 17:06:24 2016
 from pyspark import SparkContext
 
 iFile = 'data/temperature-readings.csv'
-oFile = 'data/mm_temperature'
+oFile = 'data/min_max_temperature'
 fromYear = 1950
 toYear = 2014
 
-sc = SparkContext(appName="MaxMinExtractor")
+sc = SparkContext(appName="MinMaxTempExtractorSparkJob")
 
 lines = sc.textFile(iFile)
 
