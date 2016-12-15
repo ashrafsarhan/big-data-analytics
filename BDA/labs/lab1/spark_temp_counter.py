@@ -9,13 +9,14 @@ from pyspark import SparkContext
 
 iFile = 'data/temperature-readings.csv'
 oFile = 'data/over_ten_mth_temp_counts'
+oFile2 = 'data/over_ten_temp_distinct_counts'
 fromYear = 1950
 toYear = 2014
 target_temp = 10
 
 sc = SparkContext(appName="TempCounterSparkJob")
 
-lines = sc.textFile('data/head-temperature-readings.csv')
+lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
@@ -25,7 +26,8 @@ overTenMthTemp = lines.map(lambda x: (x[1][5:7], 1))
 
 overTenMthTempCounts = overTenMthTemp.reduceByKey(lambda v1,v2: v1 + v2)
 
-overTenMthTempCountsCsv = sortedMinMaxTemp.map(lambda a: '%s,%s' % (a[0], a[1]))
+overTenMthTempCountsCsv = overTenMthTempCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
 
 overTenMthTempCountsCsv.coalesce(1).saveAsTextFile(oFile)
+
 
