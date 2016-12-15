@@ -30,4 +30,15 @@ overTenMthTempCountsCsv = overTenMthTempCounts.map(lambda a: '%s,%s' % (a[0], a[
 
 overTenMthTempCountsCsv.coalesce(1).saveAsTextFile(oFile)
 
+###################### Distinct Counting Per Station ######################
+overTenStationTemp = lines.map(lambda x: (x[0], (x[1][5:7], float(x[3]))))
+
+overTenStationTempDistinct = overTenStationTemp.distinct()
+
+overTenStationTempDistinctCounts = overTenStationTempDistinct.map(lambda x: (x[0], 1)).reduceByKey(lambda v1,v2: v1 + v2)
+
+overTenStationTempDistinctCountsCsv = overTenStationTempDistinctCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
+
+overTenStationTempDistinctCountsCsv.coalesce(1).saveAsTextFile(oFile2)
+
 
