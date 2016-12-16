@@ -7,38 +7,25 @@ Created on Mon Dec 12 17:06:24 2016
 """
 from pyspark import SparkContext
 
-iFile = 'data/temperature-readings.csv'
-oFile = 'data/over_ten_mth_temp_counts'
-oFile2 = 'data/over_ten_temp_distinct_counts'
-fromYear = 1950
+iFile = 'data/head-temperature-readings.csv'
+oFile = 'data/station_avg_mth_temp'
+fromYear = 1960
 toYear = 2014
-target_temp = 10
 
-sc = SparkContext(appName="TempCounterSparkJob")
+sc = SparkContext(appName="AvgTempSparkJob")
 
 lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
-lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear and float(x[3]) > target_temp)
+lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear)
 
-overTenMthTemp = lines.map(lambda x: (x[1][5:7], 1))
+temperatures = lines.map(lambda x: (x[0]+','+x[1][5:7], (float(x[3]), 1)))
 
-overTenMthTempCounts = overTenMthTemp.reduceByKey(lambda v1,v2: v1 + v2)
+stationMthTemp = temperatures.reduceByKey(lambda v1,v2: (v1[0]+v2[0], v1[1]+v2[1]))
 
-overTenMthTempCountsCsv = overTenMthTempCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
+stationAvgMthTemp = stationMthTemp.map(lambda a: (a[0], a[1][0]/a[1][1]))
 
-overTenMthTempCountsCsv.coalesce(1).saveAsTextFile(oFile)
+stationAvgMthTempCsv = stationAvgMthTemp.map(lambda a: '%s,%s' % (a[0], a[1]))
 
-###################### Distinct Counting Per Station ######################
-overTenStationTemp = lines.map(lambda x: (x[0], (x[1][5:7], float(x[3]))))
-
-overTenStationTempDistinct = overTenStationTemp.distinct()
-
-overTenStationTempDistinctCounts = overTenStationTempDistinct.map(lambda x: (x[0], 1)).reduceByKey(lambda v1,v2: v1 + v2)
-
-overTenStationTempDistinctCountsCsv = overTenStationTempDistinctCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
-
-overTenStationTempDistinctCountsCsv.coalesce(1).saveAsTextFile(oFile2)
-
-
+stationAvgMthTempCsv.coalesce(1).saveAsTextFile(oFile)
