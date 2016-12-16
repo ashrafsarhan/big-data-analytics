@@ -7,7 +7,7 @@ Created on Mon Dec 12 17:06:24 2016
 """
 from pyspark import SparkContext
 
-iFile = 'data/head-temperature-readings.csv'
+iFile = 'data/temperature-readings.csv'
 oFile = 'data/station_avg_mth_temp'
 fromYear = 1960
 toYear = 2014
