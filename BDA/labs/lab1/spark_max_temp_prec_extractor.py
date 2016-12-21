@@ -23,16 +23,13 @@ maxTemperatures = maxTemperatures.filter(lambda a: a[1] > 25 and a[1] < 30)
 ######### Max Precipitations #########
 precipitations = sc.textFile(iFile2)
 precipitations = precipitations.map(lambda a: a.split(";"))
-precipitations = precipitations.map(lambda x: (x[0], float(x[3])))
+precipitations = precipitations.map(lambda x: (x[0]+','+x[1], float(x[3])))
 maxPrecipitations = precipitations.reduceByKey(max)
-maxPrecipitations = maxPrecipitations.filter(lambda a: a[1] > 100 and a[1] < 200)
+maxPrecipitations = maxPrecipitations.filter(lambda a: a[1] > 100 and a[1] < 200).map(lambda x: (x[0].split(",")[0], x[1]))
 
 ######### Merged Max Temperatures/Precipitations #########
-maxTempPrec = maxTemperatures.union(maxPrecipitations).reduceByKey(lambda x,y: (x, y))
+maxTempPrec = maxTemperatures.union(maxPrecipitations)
 
 #maxTempPrecCsv = maxTempPrec.map(lambda a: '%s,%s,%s' % (a[0], a[1][0], a[1][1]))
 
 maxTempPrec.coalesce(1).saveAsTextFile(oFile)
-
-
-
