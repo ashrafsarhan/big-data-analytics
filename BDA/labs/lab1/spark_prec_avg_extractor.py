@@ -11,7 +11,7 @@ iFile = 'data/stations-Ostergotland.csv'
 iFile2 = 'data/precipitation-readings.csv'
 oFile = 'data/OstergotlandAveMonthlyPrec'
 
-sc = SparkContext(appName="OstergotlandAveMonthlyPrecSparkJob")
+sc = SparkContext(appName="OstergotlandAvgMonthlyPrecSparkJob")
 
 ostergotlandStations = sc.textFile(iFile)
 
