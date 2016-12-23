@@ -6,69 +6,56 @@ Created on Mon Dec 12 17:06:24 2016
 @author: ashraf
 """
 from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
 
 iFile = 'data/stations-Ostergotland.csv'
 iFile2 = 'data/precipitation-readings.csv'
 oFile = 'data/OstergotlandAveMonthlyPrec'
 
-sc = SparkContext(appName="OstergotlandAvgMonthlyPrecSparkJob")
+sc = SparkContext(appName="OstergotlandAvgMonthlyPrecSparkSQLJob")
 
-from pyspark import SparkContext
-from pyspark.sql import SQLContext, Row
-
-sc = SparkContext(appName = "E2A5")
 sqlContext = SQLContext(sc)
 
-# Accessing the stations
 
 # Ostergotland Stations
-
-stations = sc.textFile("/user/x_arbar/Data/stations-Ostergotland.csv") \
+ostergotlandStations = sc.textFile(iFile) \
             .map(lambda line: line.split(";")) \
-            .map(lambda obs: int(obs[0])) \
+            .map(lambda l: int(l[0])) \
             .distinct().collect()
 
-stations = {station: True for station in stations}
+isOstergotlandStation = (lambda s: s in ostergotlandStations)
 
-# Registering the table
-
-# Temperatures
-inFile = sc.textFile("/user/x_arbar/Data/precipitation-readings.csv") \
+inFile = sc.textFile(iFile2) \
             .map(lambda line: line.split(";")) \
-            .filter(lambda obs: stations.get(int(obs[0]), False)) \
-            .map(lambda obs: \
-                Row(station = obs[0], \
-                    date = obs[1],  \
-                    year = obs[1].split("-")[0], \
-                    month = obs[1].split("-")[1], \
-                    day = obs[1].split("-")[2], \
-                    time = obs[2], \
-                    prec = float(obs[3]), \
-                    quality = obs[4]))
+            .filter(lambda l: isOstergotlandStation(int(l[0])) \
+            .map(lambda l: \
+                Row(station = l[0], \
+                    date = l[1],  \
+                    year = l[1].split("-")[0], \
+                    month = l[1].split("-")[1], \
+                    day = l[1].split("-")[2], \
+                    time = l[2], \
+                    prec = float(l[3]), \
+                    quality = l[4]))
 
-schemaPrecReadings = sqlContext.createDataFrame(inFile)
+precSchema = sqlContext.createDataFrame(inFile)
 
-schemaPrecReadings.registerTempTable("precReadings")
-
-
-
-# Query
+precSchema.registerTempTable("PrecSchema")
 
 avgPrec = sqlContext.sql(" \
-                    SELECT pr.year, pr.month, AVG(prc.totPrec) AS avgMonthPrec \
-                    FROM precReadings pr, \
+                    SELECT ps.year, ps.month, AVG(prec.totPrec) AS avgMonthPrec \
+                    FROM PrecSchema ps, \
                         (SELECT year, month, station, SUM(prec) AS totPrec \
-                        FROM precReadings  \
-                        GROUP BY year, month, station) AS prc \
-                    WHERE pr.station = prc.station AND \
-                            pr.year = prc.year AND \
-                            pr.month = prc.month AND \
-                            pr.year >= 1993 AND pr.year <= 2016 \
-                    GROUP BY pr.year, pr.month")
+                        FROM PrecSchema  \
+                        GROUP BY year, month, station) AS prec \
+                    WHERE ps.station = prec.station AND \
+                           ps.year = prec.year AND \
+                            ps.month = prec.month AND \
+                            ps.year >= 1993 AND ps.year <= 2016 \
+                    GROUP BY ps.year, ps.month")
 
 avgPrec = avgPrec.rdd.repartition(1) \
                 .sortBy(ascending = False, keyfunc = lambda \
                     (year, month, prec): (year, month))
 
-print avgPrec.take(20)
-avgPrec.saveAsTextFile("Results/Exercise2/E2A5")
+avgPrec.saveAsTextFile(oFile)
