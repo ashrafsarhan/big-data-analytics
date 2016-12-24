@@ -54,7 +54,7 @@ maxTemp.coalesce(1).saveAsTextFile(oFile2)
 
 ### output:
 ```
-Row(year=u'1990', station=u'106500', minTemp=-35.0),
+[Row(year=u'1990', station=u'106500', minTemp=-35.0),
 Row(year=u'1952', station=u'108320', minTemp=-35.5), 
 Row(year=u'1974', station=u'106270', minTemp=-35.6), 
 Row(year=u'1954', station=u'103090', minTemp=-36.0), 
@@ -63,11 +63,11 @@ Row(year=u'1975', station=u'105370', minTemp=-37.0),
 Row(year=u'1972', station=u'105360', minTemp=-37.5), 
 Row(year=u'1995', station=u'103410', minTemp=-37.6), 
 Row(year=u'2000', station=u'105220', minTemp=-37.6), 
-Row(year=u'1957', station=u'108170', minTemp=-37.8)
+Row(year=u'1957', station=u'108170', minTemp=-37.8)]
 ```
 ### output:
 ```
-Row(year=u'1975', station=u'105370', maxTemp=36.1), 
+[Row(year=u'1975', station=u'105370', maxTemp=36.1), 
 Row(year=u'1992', station=u'107400', maxTemp=35.4), 
 Row(year=u'1994', station=u'105370', maxTemp=34.7), 
 Row(year=u'2010', station=u'105260', maxTemp=34.4), 
@@ -76,7 +76,7 @@ Row(year=u'1989', station=u'105370', maxTemp=33.9),
 Row(year=u'1982', station=u'107530', maxTemp=33.8), 
 Row(year=u'1968', station=u'106270', maxTemp=33.7), 
 Row(year=u'1966', station=u'103410', maxTemp=33.5), 
-Row(year=u'1983', station=u'106580', maxTemp=33.3)
+Row(year=u'1983', station=u'106580', maxTemp=33.3)]
 ```
 
 ## 2. Count the number of readings for each month in the period of 1950-2014 which are higher than 10 degrees. Repeat the exercise, this time taking only distinct readings from each station. That is, if a station reported a reading above 10 degrees in some month, then it appears only once in the count for that month.  
@@ -139,7 +139,7 @@ overTenTempDistinct.saveAsTextFile(oFile2)
 
 ### output:
 ```
-Row(year=u'2014', month=u'07', counts=147910), 
+[Row(year=u'2014', month=u'07', counts=147910), 
 Row(year=u'2011', month=u'07', counts=147060), 
 Row(year=u'2010', month=u'07', counts=143860), 
 Row(year=u'2012', month=u'07', counts=138166), 
@@ -148,11 +148,11 @@ Row(year=u'2009', month=u'07', counts=133570),
 Row(year=u'2011', month=u'08', counts=133483), 
 Row(year=u'2009', month=u'08', counts=129007), 
 Row(year=u'2013', month=u'08', counts=128920), 
-Row(year=u'2003', month=u'07', counts=128360)
+Row(year=u'2003', month=u'07', counts=128360)]
 ```
 ### output:
 ```
-Row(year=u'1994', month=u'07', station=u'95170', counts=208), 
+[Row(year=u'1994', month=u'07', station=u'95170', counts=208), 
 Row(year=u'1994', month=u'07', station=u'107400', counts=206), 
 Row(year=u'1994', month=u'07', station=u'86340', counts=206), 
 Row(year=u'1994', month=u'07', station=u'78300', counts=205), 
@@ -161,7 +161,7 @@ Row(year=u'1994', month=u'07', station=u'86440', counts=205),
 Row(year=u'1994', month=u'07', station=u'64560', counts=204), 
 Row(year=u'1994', month=u'07', station=u'53220', counts=203), 
 Row(year=u'2014', month=u'07', station=u'92410', counts=202), 
-Row(year=u'2010', month=u'07', station=u'75250', counts=201)
+Row(year=u'2010', month=u'07', station=u'75250', counts=201)]
 ```
 
 ## 3. Find the average monthly temperature for each available station in Sweden. Your result should include average temperature for each station for each month in the period of 1960-2014. Bear in mind that not every station has the readings for each month in this timeframe.
@@ -211,7 +211,7 @@ avgMonthlyTemp.saveAsTextFile(oFile)
 
 ### output:
 ```
-Row(year=u'2014', month=u'07', station=u'96000', AvgTemp=26.3), 
+[Row(year=u'2014', month=u'07', station=u'96000', AvgTemp=26.3), 
 Row(year=u'1994', month=u'07', station=u'65450', AvgTemp=23.65483870967742), 
 Row(year=u'1994', month=u'07', station=u'95160', AvgTemp=23.505376344086027), 
 Row(year=u'1994', month=u'07', station=u'75120', AvgTemp=23.26881720430107), 
@@ -299,7 +299,7 @@ tempPrec.saveAsTextFile(oFile)
 
 ### output:
 ```
-Row(station=u'147560', maxTemp=29.9, maxDailyPrec=177.89999999999975), 
+[Row(station=u'147560', maxTemp=29.9, maxDailyPrec=177.89999999999975), 
 Row(station=u'68560', maxTemp=28.5, maxDailyPrec=153.19999999999996), 
 Row(station=u'63160', maxTemp=29.9, maxDailyPrec=186.69999999999996), 
 Row(station=u'84310', maxTemp=30.0, maxDailyPrec=116.8), 
@@ -308,7 +308,7 @@ Row(station=u'107140', maxTemp=30.0, maxDailyPrec=197.59999999999948),
 Row(station=u'183750', maxTemp=29.4, maxDailyPrec=188.9999999999996), 
 Row(station=u'66110', maxTemp=26.3, maxDailyPrec=153.09999999999985), 
 Row(station=u'127130', maxTemp=29.9, maxDailyPrec=193.19999999999965), 
-Row(station=u'96190', maxTemp=30.0, maxDailyPrec=194.9999999999995)
+Row(station=u'96190', maxTemp=30.0, maxDailyPrec=194.9999999999995)]
 ```
 
 ## 5. Calculate the average monthly precipitation for the Östergotland region (list of stations is provided in the separate file). In order to do this, you will first need to calculate the total monthly precipitation for each station before calculating the monthly average (by averaging over stations).
@@ -381,7 +381,7 @@ avgPrec.saveAsTextFile(oFile)
 
 ### output:
 ```
-Row(year=u'2006', month=u'12', avgMonthPrec=29.75475174118164), 
+[Row(year=u'2006', month=u'12', avgMonthPrec=29.75475174118164), 
 Row(year=u'1995', month=u'01', avgMonthPrec=26.000000000000004), 
 Row(year=u'1995', month=u'02', avgMonthPrec=31.799999999999613), 
 Row(year=u'1995', month=u'03', avgMonthPrec=34.40000000000035), 
@@ -390,7 +390,7 @@ Row(year=u'2013', month=u'01', avgMonthPrec=21.572687760779043),
 Row(year=u'1995', month=u'05', avgMonthPrec=26.000000000000004), 
 Row(year=u'2007', month=u'01', avgMonthPrec=68.67610803324125), 
 Row(year=u'2013', month=u'02', avgMonthPrec=25.812057286626647), 
-Row(year=u'1995', month=u'06', avgMonthPrec=97.19999999999871)
+Row(year=u'1995', month=u'06', avgMonthPrec=97.19999999999871)]
 ```
 
 ## 6. Compare the average monthly temperature (find the difference) in the period 1950-2014 for all stations in Östergotland with long-term monthly averages in the period of 1950-1980.

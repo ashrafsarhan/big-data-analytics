@@ -291,28 +291,31 @@ maxTemperatures = maxTemperatures.filter(lambda a: a[1] > 25 and a[1] < 30)
 precipitations = sc.textFile(iFile2)
 precipitations = precipitations.map(lambda a: a.split(";"))
 precipitations = precipitations.map(lambda x: (x[0]+','+x[1], float(x[3])))
-maxPrecipitations = precipitations.reduceByKey(max)
-maxPrecipitations = maxPrecipitations.filter(lambda a: a[1] > 100 and a[1] < 200) \ 
-.map(lambda x: (x[0].split(",")[0], x[1]))
+maxPrecipitations = precipitations.reduceByKey(lambda v1, v2: v1+v2)
+maxPrecipitations = maxPrecipitations.filter(lambda a: a[1] >= 100 and a[1] <= 200) \
+.map(lambda x: (x[0].split(",")[0], x[1])).reduceByKey(max)
 
 ######### Merged Max Temperatures/Precipitations #########
-maxTempPrec = maxTemperatures.union(maxPrecipitations)
+maxTempPrec = maxTemperatures.leftOuterJoin(maxPrecipitations)
+
+maxTempPrecCsv = maxTempPrec.map(lambda a: '%s,%s,%s' % (a[0], a[1][0], a[1][1]))
 
 maxTempPrec.coalesce(1).saveAsTextFile(oFile)
 ```
 
 ### output:
 ```
-81060,28.0
-83620,29.4
-133230,28.2
-134150,29.7
-62140,27.7
-132170,28.0
-89240,29.9
-132620,26.8
-156730,29.1
-78280,28.7
+station,maxTemp,maxPrec
+128510,29.5,None
+192830,29.5,None 
+84660,27.6,None 
+139110,29.0,None 
+161670,25.7,None 
+166940,27.9,None 
+77180,29.3,None 
+180740,29.0,None 
+72340,29.8,None 
+147560,29.9,None
 ```
 
 ## 5. Calculate the average monthly precipitation for the Östergotland region (list of stations is provided in the separate file). In order to do this, you will first need to calculate the total monthly precipitation for each station before calculating the monthly average (by averaging over stations).
