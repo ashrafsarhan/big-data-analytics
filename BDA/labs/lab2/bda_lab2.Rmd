@@ -126,7 +126,7 @@ overTenTemp = sqlContext.sql(" \
 overTenTemp.saveAsTextFile(oFile1)
 
 overTenTempDistinct = sqlContext.sql(" \
-                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station, \
+                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station,\
                                 COUNT(DISTINCT temp) AS counts\
                         FROM TempSchema \
                         WHERE temp >= 10 AND year >= 1950 AND year <= 2014\
@@ -199,7 +199,7 @@ tempSchema = sqlContext.createDataFrame(inFile)
 tempSchema.registerTempTable("TempSchema")
 
 avgMonthlyTemp = sqlContext.sql(" \
-                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station, \
+                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station,\
                                 AVG(temp) AS AvgTemp \
                         FROM TempSchema \
                         WHERE year >= 1960 AND year <= 2014 \
