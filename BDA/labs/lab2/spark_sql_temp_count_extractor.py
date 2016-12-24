@@ -14,6 +14,7 @@ oFile2 = 'data/sql_over_ten_temp_distinct_counts'
 
 
 sc = SparkContext(appName = "TempCounterSparkSQLJob")
+
 sqlContext = SQLContext(sc)
 
 inFile = sc.textFile(iFile) \
@@ -29,34 +30,23 @@ tempSchema = sqlContext.createDataFrame(inFile)
 tempSchema.registerTempTable("TempSchema")
 
 overTenTemp = sqlContext.sql(" \
-                        SELECT FIRST(year), FIRST(month), COUNT(temp) AS counts\
+                        SELECT FIRST(year) AS year, FIRST(month) AS month, COUNT(temp) AS counts\
                         FROM TempSchema \
                         WHERE temp >= 10 AND year >= 1950 AND year <= 2014\
                         GROUP BY year, month \
                         ORDER BY counts DESC")
 
-overTenTemp = overTenTemp.rdd.repartition(1) \
-                        .sortBy(ascending = False, keyfunc = lambda \
-                                (year, month, counts): counts)
-
 overTenTemp.saveAsTextFile(oFile1)
 
 
 overTenTempDistinct = sqlContext.sql(" \
-                        SELECT FIRST(year), FIRST(month), FIRST(station), \
+                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station, \
                                 COUNT(DISTINCT temp) AS counts\
                         FROM TempSchema \
                         WHERE temp >= 10 AND year >= 1950 AND year <= 2014\
                         GROUP BY year, month, station \
                         ORDER BY counts DESC")
 
-greaterTenDistinct = greaterTenDistinct.rdd.repartition(1) \
-                            .map(lambda (year, month, station, counts): \
-                                ((year, month), counts)) \
-                            .reduceByKey(lambda  \
-                                    count1, count2: count1 + count2) \
-                            .sortBy(ascending = False, keyfunc = lambda \
-                                    ((year, month), counts): counts)
 
-greaterTenDistinct.saveAsTextFile(oFile2)
+overTenTempDistinct.saveAsTextFile(oFile2)
 

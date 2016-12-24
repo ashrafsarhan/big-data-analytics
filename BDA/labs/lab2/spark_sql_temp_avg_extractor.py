@@ -10,8 +10,6 @@ from pyspark.sql import SQLContext, Row
 
 iFile = 'data/temperature-readings.csv'
 oFile = 'data/sql_station_avg_mth_temp'
-fromYear = 1960
-toYear = 2014
 
 sc = SparkContext(appName="AvgTempSparkSQLJob")
 
@@ -30,15 +28,11 @@ tempSchema = sqlContext.createDataFrame(inFile)
 tempSchema.registerTempTable("TempSchema")
 
 avgMonthlyTemp = sqlContext.sql(" \
-                        SELECT FIRST(year), FIRST(month), FIRST(station), \
+                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station, \
                                 AVG(temp) AS AvgTemp \
                         FROM TempSchema \
                         WHERE year >= 1960 AND year <= 2014 \
                         GROUP BY year, month, station \
                         ORDER BY AvgTemp DESC")
-
-avgMonthlyTemp = avgMonthTemp.rdd.repartition(1) \
-                            .sortBy(ascending = False, keyfunc = lambda \
-                                (year, month, station, avgtemp): avgtemp)
 
 avgMonthlyTemp.saveAsTextFile(oFile)

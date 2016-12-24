@@ -21,9 +21,11 @@ isOstergotlandStation = (lambda s: s in ostergotlandStations)
 
 temperatures = sc.textFile(iFile2)
 
-temperatures = temperatures.map(lambda line: line.split(";")).filter(lambda x: isOstergotlandStation(int(x[0])) and int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <= 2014)
+temperatures = temperatures.map(lambda line: line.split(";")). \
+filter(lambda x: isOstergotlandStation(int(x[0])) and int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <= 2014)
 
-daily_temperatures = temperatures.map(lambda x: (x[1], (float(x[3]), float(x[3])))).reduceByKey(lambda t1, t2: (min(t1[0], t2[0]), max(t1[1], t2[1])))
+daily_temperatures = temperatures.map(lambda x: (x[1], (float(x[3]), float(x[3])))). \
+reduceByKey(lambda t1, t2: (min(t1[0], t2[0]), max(t1[1], t2[1])))
 
 monthly_temperatures = daily_temperatures.map(lambda x:(x[0].split("-")[0]+','+x[0].split("-")[1], (x[1][0]+x[1][1], 2)))
 
@@ -31,7 +33,10 @@ monthly_temperatures = monthly_temperatures.reduceByKey(lambda v1, v2: (v1[0] + 
 
 monthly_avg_temperatures = monthly_temperatures.map(lambda x: (x[0], x[1][0] / x[1][1]))
 
-longterm_monthly_avg_temperatures = monthly_avg_temperatures.filter(lambda x: int(x[0].split(",")[0]) >= 1950 and int(x[0].split(",")[0]) <= 1980).map(lambda x: (x[0].split(",")[1], (x[1], 1))).reduceByKey(lambda t1, t2:(t1[0] + t2[0], t1[1] + t2[1])).map(lambda t: (t[0], t[1][0]/t[1][1]))
+longterm_monthly_avg_temperatures = monthly_avg_temperatures. \
+filter(lambda x: int(x[0].split(",")[0]) >= 1950 and int(x[0].split(",")[0]) <= 1980). \
+map(lambda x: (x[0].split(",")[1], (x[1], 1))).reduceByKey(lambda t1, t2:(t1[0] + t2[0], t1[1] + t2[1])). \
+map(lambda t: (t[0], t[1][0]/t[1][1]))
 
 longTermAvgTempLookup = {month: temp for month, temp in longterm_monthly_avg_temperatures.collect()}
 

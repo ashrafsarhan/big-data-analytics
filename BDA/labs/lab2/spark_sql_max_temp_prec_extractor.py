@@ -13,6 +13,7 @@ iFile2 = 'data/precipitation-readings.csv'
 oFile = 'data/sql_max_temperature_precipitation'
 
 sc = SparkContext(appName="MaxTempPrecExtractorSparkSQLJob")
+
 sqlContext = SQLContext(sc)
 
 # Temperatures
@@ -61,9 +62,5 @@ tempPrec = sqlContext.sql(" \
                         t.temp >= 25 AND t.temp <= 30 AND \
                         p.dailyPrec >= 100 AND p.dailyPrec <= 200 \
                 GROUP BY t.station")
-
-tempPrec = tempPrec.rdd.repartition(1) \
-                    .sortBy(ascending = False, keyfunc = lambda \
-                        (station, temp, prec): station)
 
 tempPrec.saveAsTextFile(oFile)

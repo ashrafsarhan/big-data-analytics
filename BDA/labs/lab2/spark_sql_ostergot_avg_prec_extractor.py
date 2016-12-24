@@ -27,7 +27,7 @@ isOstergotlandStation = (lambda s: s in ostergotlandStations)
 
 inFile = sc.textFile(iFile2) \
             .map(lambda line: line.split(";")) \
-            .filter(lambda l: isOstergotlandStation(int(l[0])) \
+            .filter(lambda l: isOstergotlandStation(int(l[0]))) \
             .map(lambda l: \
                 Row(station = l[0], \
                     date = l[1],  \
@@ -43,7 +43,7 @@ precSchema = sqlContext.createDataFrame(inFile)
 precSchema.registerTempTable("PrecSchema")
 
 avgPrec = sqlContext.sql(" \
-                    SELECT ps.year, ps.month, AVG(prec.totPrec) AS avgMonthPrec \
+                    SELECT ps.year AS year, ps.month AS month, AVG(prec.totPrec) AS avgMonthPrec \
                     FROM PrecSchema ps, \
                         (SELECT year, month, station, SUM(prec) AS totPrec \
                         FROM PrecSchema  \
