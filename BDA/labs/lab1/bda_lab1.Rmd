@@ -440,7 +440,7 @@ monthly_avg_diff_temperatures_csv.coalesce(1).saveAsTextFile(oFile)
 
 ### output:
 ```
-year,month,avgDiffPrec
+year,month,tempDiff
 1992,06,0.611666666667 
 1967,11,1.51274193548 
 1993,09,-3.8173655914 
@@ -451,6 +451,16 @@ year,month,avgDiffPrec
 2002,07,0.460926118626 
 1971,12,2.77164412071 
 1991,07,0.851248699272
+```
 
+### plot:
+```{r}
+avgDiffTemp <- read.csv(file = 'OstergotlandAvgMonthlyDiffTemp.csv', 
+                        header = FALSE, sep = ',', dec = '.')
+colnames(avgDiffTemp) <- c('year', 'month', 'tempDiff')
+head(avgDiffTemp)
+plot(x = avgDiffTemp$year, y = scale(as.numeric(avgDiffTemp$tempDiff)), 
+     main = 'Average Monthly Difference Temperatures (1950-1980)', 
+     xlab = 'Date', ylab = 'Average Temp Difference')
 ```
 
