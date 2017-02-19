@@ -1,9 +1,9 @@
 ---
 title: "732A54 Big Data Analytics"
-subtitle: " Examples of Exam Questions"
 author: "Ashraf Sarhan"
 date: "December 25, 2016"
-output: pdf_document
+output: html_document
+subtitle: ' Examples of Exam Questions'
 ---
 
 ## Databases for Big Data:
@@ -191,4 +191,131 @@ value. (inconsistency window)
          + Datanodes send block reports to all namenodes
          + Clients must provide transparent to the user mechanism to handle failover
          + The standby node takes checkpoints of the active namenode namespace instead of the secondary node
+         
+###  3. Dynamo:
+*  Explain the data model and list main applications of Dynamo
+     + Highly-available key-value store
+          + CAP: Availability and Partition Tolerance
+          + Use case: customer should be able to view and add to the shopping cart during various failure scenarios
+     + always serve writes and reads
+     + Many Amazon services only need primary-key access
+          + Best seller lists
+          + Customer preferences
+          + Product catalog
+* Explain the Dynamo design considerations and what are the advantages of Dynamo in comparison to RDBMSs
+     + Design considerations
+         + When to resolve conflicting updates
+              + Reads or writes – never reject writes
+         + Who to resolve conflicting updates
+              + Data store or application
+         + Incremental scalability
+         + Symmetry
+         + Decentralization
+         + Heterogeneity
+     + Why not RDBMS?
+         + Amazon’s services often store and retrieve data only by key
+              + thus do not need complex querying and managing functionalities
+         + Replication technologies usually favor consistency, not availability
+         + Cannot scale out easily
+* Explain how basic NoSQL techniques are applied in Dynamo.
+     + NoSQL: Techniques – Consistent Hashing
+         + arrange the nodes in a ring
+         + include hash values of all nodes in hash structure
+         + calculate hash value of the key to be added/retrieved
+         + choose node which occurs next clockwise in the ring
+         + if node is dropped or gets lost, missing data is redistributed to adjacent nodes
+         + if a new node is added, its hash value is added to the hash table
+         + the hash realm is repartitioned, and hash data will
+be transferred to new neighbor
+     + NoSQL: Techniques – Vector Clock
+         + A vector clock for a system of N nodes is an array of N integers.
+         + Each process keeps its own vector clock, V i , which it uses to timestamp local events.
+         + Processes piggyback vector timestamps on the messages they send to one another, and there are simple rules for updating the clocks
+* Explain versioning and semantic reconciliation in Dynamo
+     + Asynchronous update propagation (ex. shopping cart)
+     + Each update is a new, immutable version (many versions of an object may exist)
+     + Replicas eventually become consistent
 
+###  4. HBase:
+*  Explain the difference between column-oriented and row-oriented storage
+     + Row-oriented storage (SQL Schema)
+     + Column-oriented storage (HBase)
+        + Saved data grouped by columns
+        + Not all values are needed for some queries/applications (Analytical databases)
+        + Leads to (Reduced I/O, Better compression due to similar values)
+     + HBase
+         + Hosts very large sparse tables
+         + Based on Google BigTable and built on top of HDFS
+         + Provide low-latency real-time read/write random access on a (sequence of) cell level
+         + Scales linearly on commodity hardware
+         + Atomic access to row data
+         + CAP: provides strong consistency and partition tolerance --> sacrifices availability
+*  Give example applications of HBase
+     + Facebook applications that use HBase with HBase enhancements performed internally in Facebook
+        + Facebook Messaging - High write throughput
+        + Facebook Insights – Real-time analytics
+        + Facebook Metric System - Fast reads of Rrecent data and table scans
+     + Others: Adobe, StumbleUpon, Twitter, and groups at Yahoo!
+ 
+### 5. Hive and Shark/SparkSQL:
+* Explain the problem that Hive and Shark/SparkSQL address
+*  What  is  Spark?  
+     + Separate,  fast,  MapReduce like  engine
+     + In-memory  data  storage  for  very  fast  iterative  queries
+     + General  execution  graphs  and  powerful  optimizations 
+     + Up  to  40x  faster  than  Hadoop  Compatible  with  Hadoop’s  storage  APIs
+     + Can  read/write  to  any  Hadoop-supported  system,   including  HDFS,  HBase,  SequenceFiles, etc 
+*  What  is  Shark?  
+     + Port  of  Apache  Hive  to  run  on  Spark
+     + Compatible  with  existing  Hive  data,  metastores,  and  queries  (HiveQL,  UDFs,  etc)
+     + Similar  speedups  of  up  to  40x 
+*  Explain the data model of Hive and Shark/SparkSQL
+     + Spark Model 
+        + Write programs in terms of transformations on distributed datasets 
+        + Resilient Distributed Datasets (RDDs) 
+        + Collections of objects that can be stored in memory or disk across a cluster 
+        + Parallel functional transformations (map, filter, …) 
+        + Automatically rebuilt on failure 
+* Discuss the trade-off between schema-on-read and schema-on-write approaches
+     + Traditionally relational databases like Oracle, DB2(IBM),SQL server(Microsoft),Vertica(HP), etc enforces the very first thing to do - create schema of database objects(tables, views,etc) and then perform database operation like data loading.This design methodology is termed as schema on write(data structuring is verified against schema when it is written to database).Sometimes RDBMS modelling is termed as- prescriptive data modelling (1.create static DB schema, 2.transform data into RDBMS and 3.Query data in RDBMS format).
+
+     + In order deal with large volume of data various databases technologies emerged adopting SQL like paradigm.Apache Hive is one of them,which supports SQL like language(HiveQL) and uses HDFS & Mapreduce internally. Hive does not enforce schema check while data load operation, just load the data and Done!!.When a query is issued for read operation schema check is performed.This design methodology is termed as schema before read(data structuring is verified against schema when it is read) and it follows prescriptive data modelling(1.Copy data in its native format, 2.Create schema & parser and 3.Query Data in its native format).
+
+*  Explain the difference between OLAP and OLTP
+     + OLTP (On-line Transaction Processing) is characterized by a large number of short on-line transactions (INSERT, UPDATE, DELETE). The main emphasis for OLTP systems is put on very fast query processing, maintaining data integrity in multi-access environments and an effectiveness measured by number of transactions per second. In OLTP database there is detailed and current data, and schema used to store transactional databases is the entity model (usually 3NF).
+
+     + OLAP (On-line Analytical Processing) is characterized by relatively low volume of transactions. Queries are often very complex and involve aggregations. For OLAP systems a response time is an effectiveness measure. OLAP applications are widely used by Data Mining techniques. In OLAP database there is aggregated, historical data, stored in multi-dimensional schemas (usually star schema).
+
+*  Explain the main differences between Hive and Shark and what are the advantages they lead to
+     + Hive
+        + Scalable data warehouse
+        + Built on top of Hadoop
+              + translates a query into MapReduce tasks
+              + Intermediate results materialized on HDFS
+        + HiveQL - SQL-like declarative language + UDFs
+     + Shark
+        + Provides unified engine for running efficiently SQL queries and iterative machine learning algorithms
+        + In-memory computations
+        + Benefits from In-memory Resilient Distributed Datasets (RDDs) due to
+        + often complex analytic functions are iterative
+        + traditional SQL warehouse workloads exhibit strong temporal and spatial locality
+     
+* Explain how fault tolerance is achieved in Shark/SparkSQL
+     + Shark – Fault Tolerance
+        + Main-memory databases
+              + track fine-grained updates to tables
+              + replicate writes across the network
+              + expensive on large commodity clusters
+        + Shark
+              + tracks coarse-grained operations, eg, map, join, etc.
+              + recovers by tracking the lineage of each dataset and recomputing lost data
+              + supports machine learning and graph computations
+     + Shark – Fault Tolerance Properties
+        + Shark can tolerate the loss of any set of worker nodes
+              + Also during a query
+              + Lost data will be recomputed using the lineage graph
+        + Lost partitions are rebuilt in parallel
+        + If a task is slow, it could be run on another node
+        + Recovery is supported for both SQL and machine learning user defined functions
+        
+### 6. Parallel Computing:        
