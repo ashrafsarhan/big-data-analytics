@@ -16,46 +16,44 @@ sc = SparkContext(appName="OstergotlandAvgMonthlyPrecSparkSQLJob")
 
 sqlContext = SQLContext(sc)
 
-
 # Ostergotland Stations
-ostergotlandStations = sc.textFile(iFile) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: int(l[0])) \
-            .distinct().collect()
+ostergotlandStations = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                           .map(lambda obs: int(obs[0])) \
+                           .distinct().collect()
 
-isOstergotlandStation = (lambda s: s in ostergotlandStations)
+ostergotlandStations = sc.broadcast(ostergotlandStations)
 
-inFile = sc.textFile(iFile2) \
-            .map(lambda line: line.split(";")) \
-            .filter(lambda l: isOstergotlandStation(int(l[0]))) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    prec = float(l[3]), \
-                    quality = l[4]))
+ostergotlandStations = {station: True for station in ostergotlandStations.value}
 
-precSchema = sqlContext.createDataFrame(inFile)
+precipitations = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+                                          .filter(lambda obs: ostergotlandStations.get(int(obs[0]), False)) \
+                                          .map(lambda obs: Row(day=obs[1],
+                                                               month=obs[1][:7],
+                                                               station=int(obs[0]),
+                                                               precip=float(obs[3])))
 
+precSchema = sqlContext.createDataFrame(precipitations)
 precSchema.registerTempTable("PrecSchema")
 
-avgPrec = sqlContext.sql(" \
-                    SELECT ps.year AS year, ps.month AS month, AVG(prec.totPrec) AS avgMonthPrec \
-                    FROM PrecSchema ps, \
-                        (SELECT year, month, station, SUM(prec) AS totPrec \
-                        FROM PrecSchema  \
-                        GROUP BY year, month, station) AS prec \
-                    WHERE ps.station = prec.station AND \
-                           ps.year = prec.year AND \
-                            ps.month = prec.month AND \
-                            ps.year >= 1993 AND ps.year <= 2016 \
-                    GROUP BY ps.year, ps.month")
+avgMthPrec = sqlContext.sql(
+        """
+        SELECT mytbl2.month, AVG(mytbl2.precip) AS avg_precip
+        FROM
+        (
+        SELECT mytbl1.month, mytbl1.station, SUM(mytbl1.precip) AS precip
+        FROM
+        (
+        SELECT month, station, SUM(precip) AS precip
+        FROM PrecSchema
+        GROUP BY day, month, station
+        ) AS mytbl1
+        GROUP BY mytbl1.month, mytbl1.station
+        ) AS mytbl2
+        GROUP BY mytbl2.month
+        ORDER BY mytbl2.month DESC
+        """
+    )
 
-avgPrec = avgPrec.rdd.repartition(1) \
-                .sortBy(ascending = False, keyfunc = lambda \
-                    (year, month, prec): (year, month))
+avgMthPrec.rdd.repartition(1).sortBy(ascending=False, keyfunc=lambda (month, precip): month)
 
-avgPrec.saveAsTextFile(oFile)
+avgMthPrec.saveAsTextFile(oFile)

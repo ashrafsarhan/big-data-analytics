@@ -16,26 +16,69 @@ sc = SparkContext(appName = "MinMaxTempExtractorSparkSQLJob")
 
 sqlContext = SQLContext(sc)
 
-inFile = sc.textFile(iFile).map(lambda line: line.split(";")). \
-map(lambda l: Row(station = l[0], year = l[1].split("-")[0], month = l[1].split("-")[1], day = l[1].split("-")[2], time = l[2], temp = float(l[3]), quality = l[4]))
+inFile = sc.textFile(iFile) \
+            .map(lambda line: line.split(";")) \
+            .map(lambda obs: \
+                Row(station = obs[0], date = obs[1],  \
+                    year = obs[1].split("-")[0], time = obs[2],
+                    temp = float(obs[3]), quality = obs[4]))
 
 tempSchema = sqlContext.createDataFrame(inFile)
 
 tempSchema.registerTempTable("TempSchema")
 
-minTemp = sqlContext.sql("SELECT FIRST(year) AS year, FIRST(station) AS station, MIN(temp) AS minTemp \
-                          FROM TempSchema \
-                          WHERE year >= 1950 AND year <= 2014 \
-                          GROUP BY year \
-                          ORDER BY minTemp DESC")
+"""
+Q1. year, station with the max, maxValue ORDER BY maxValue DESC
+"""
+maxTemp = sqlContext.sql("""
+        SELECT DISTINCT(table1.year) AS year,
+                FIRST(table1.station) AS station,
+                FIRST(temp) AS temp
+        FROM TempSchema AS table1
+        INNER JOIN
+        (
+        SELECT year, MAX(temp) AS max_temp
+        FROM TempSchema
+        GROUP BY year
+        ) AS table2
+        ON table1.year = table2.year
+        WHERE table1.temp = table2.max_temp
+        GROUP BY table1.year
+        ORDER BY temp DESC
+        """
+        )
 
-minTemp.coalesce(1).saveAsTextFile(oFile1)
+maxTemp = maxTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                            (year, station, temp): temp)
 
-maxTemp = sqlContext.sql("SELECT FIRST(year) AS year, FIRST(station) AS station, MAX(temp) AS maxTemp \
-                          FROM TempSchema \
-                          WHERE year >= 1950 AND year <= 2014 \
-                          GROUP BY year \
-                          ORDER BY maxTemp DESC")
+print maxTemp.take(10)
+maxTemp.saveAsTextFile(oFile1)
 
-maxTemp.coalesce(1).saveAsTextFile(oFile2)
+"""
+Q2. year, station with the min, minValue ORDER BY minValue DESC
+"""
+minTemp = sqlContext.sql("""
+        SELECT DISTINCT(table1.year) AS year,
+                FIRST(table1.station) AS station,
+                FIRST(temp) AS temp
+        FROM TempSchema AS table1
+        INNER JOIN
+        (
+        SELECT year, MIN(temp) AS min_temp
+        FROM TempSchema
+        GROUP BY year
+        ) AS table2
+        ON table1.year = table2.year
+        WHERE table1.temp = table2.min_temp
+        GROUP BY table1.year
+        ORDER BY temp DESC
+        """
+)
+
+minTemp = minTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                            (year, station, temp): temp)
+print minTemp.take(10)
+minTemp.saveAsTextFile(oFile2)
 

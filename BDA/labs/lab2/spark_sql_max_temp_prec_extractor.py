@@ -17,50 +17,42 @@ sc = SparkContext(appName="MaxTempPrecExtractorSparkSQLJob")
 sqlContext = SQLContext(sc)
 
 # Temperatures
-inFile = sc.textFile(iFile) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    temp = float(l[3]), \
-                    quality = l[4]))
+inFile = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                                      .map(lambda obs: Row(station=int(obs[0]),
+                                                           temp=float(obs[3])))
 
 tempSchema = sqlContext.createDataFrame(inFile)
-
 tempSchema.registerTempTable("TempSchema")
 
 # precipitation
-inFile2 = sc.textFile(iFile2) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    prec = float(l[3]), \
-                    quality = l[4]))
+inFile2 = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+                                          .map(lambda obs: Row(station=int(obs[0]),
+                                                               day=obs[1],
+                                                               precip=float(obs[3])))
 
 precSchema = sqlContext.createDataFrame(inFile2)
-
 precSchema.registerTempTable("PrecSchema")
 
-tempPrec = sqlContext.sql(" \
-                SELECT t.station, \
-                        MAX(t.temp) AS maxTemp, \
-                        MAX(p.dailyPrec) AS maxDailyPrec\
-                FROM TempSchema t, \
-                    (SELECT station, SUM(prec) as dailyPrec \
-                    FROM PrecSchema \
-                    GROUP BY station, day) p \
-                WHERE t.station = p.station AND \
-                        t.temp >= 25 AND t.temp <= 30 AND \
-                        p.dailyPrec >= 100 AND p.dailyPrec <= 200 \
-                GROUP BY t.station")
+combinedTempPrec = sqlContext.sql(
+        """
+        SELECT tr.station, MAX(temp) AS max_temp, MAX(precip) AS max_precip
+        FROM
+        TempSchema AS tr
+        INNER JOIN
+        (
+        SELECT station, SUM(precip) AS precip
+        FROM PrecSchema
+        GROUP BY day, station
+        ) AS pr
+        ON tr.station = pr.station
+        WHERE temp >= 25 AND temp <= 30
+        AND precip >= 100 AND precip <= 200
+        GROUP BY tr.station
+        ORDER BY tr.station DESC
+        """
+    )
 
-tempPrec.saveAsTextFile(oFile)
+combinedTempPrec.rdd.repartition(1).sortBy(ascending=False, 
+                        keyfunc=lambda (station, temp, precip): station)
+
+combinedTempPrec.saveAsTextFile(oFile)

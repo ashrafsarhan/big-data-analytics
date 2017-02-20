@@ -2,15 +2,16 @@
 title: "732A54 - Big Data Analytics"
 subtitle: "BDA2 Spark SQL Exercises"
 author: "Ashraf Sarhan (ashsa762)"
-date: "December 23, 2016"
 output: pdf_document
 ---
-## 1. What are the lowest and highest temperatures measured each year for the period 1950-2014. Provide the lists sorted in the descending order with respect to the maximum temperature. In this exercise you will use the `temperature-readings.csv` file. 
+# Assignment 1
+
+# Questions:
   * `year, station with the max, maxValue ORDER BY maxValue DESC`
   * `year, station with the min, minValue ORDER BY minValue DESC`
   
-### spark_sql_mmt_extractor.py:
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -20,7 +21,6 @@ Created on Mon Dec 12 17:06:24 2016
 """
 from pyspark import SparkContext
 from pyspark.sql import SQLContext, Row
-from pyspark.sql import functions as sql
 
 iFile = 'data/temperature-readings.csv'
 oFile1 = 'data/sql_max_temperature'
@@ -30,61 +30,110 @@ sc = SparkContext(appName = "MinMaxTempExtractorSparkSQLJob")
 
 sqlContext = SQLContext(sc)
 
-inFile = sc.textFile(iFile).map(lambda line: line.split(";")). \
-map(lambda l: Row(station = l[0], year = l[1].split("-")[0], month = l[1].split("-")[1], \
-day = l[1].split("-")[2], time = l[2], temp = float(l[3]), quality = l[4]))
+inFile = sc.textFile(iFile) \
+            .map(lambda line: line.split(";")) \
+            .map(lambda obs: \
+                Row(station = obs[0], date = obs[1],  \
+                    year = obs[1].split("-")[0], time = obs[2],
+                    temp = float(obs[3]), quality = obs[4]))
 
 tempSchema = sqlContext.createDataFrame(inFile)
 
 tempSchema.registerTempTable("TempSchema")
 
-minTemp = tempSchema.select('year','station','temp').groupBy('year'). \
-agg(sql.min('temp').alias("minTemp")).orderBy('minTemp', ascending = [0])
+"""
+Q1. year, station with the max, maxValue ORDER BY maxValue DESC
+"""
+maxTemp = sqlContext.sql("""
+        SELECT DISTINCT(table1.year) AS year,
+                FIRST(table1.station) AS station,
+                FIRST(temp) AS temp
+        FROM TempSchema AS table1
+        INNER JOIN
+        (
+        SELECT year, MAX(temp) AS max_temp
+        FROM TempSchema
+        GROUP BY year
+        ) AS table2
+        ON table1.year = table2.year
+        WHERE table1.temp = table2.max_temp
+        GROUP BY table1.year
+        ORDER BY temp DESC
+        """
+        )
 
-minTemp.coalesce(1).saveAsTextFile(oFile1)
+maxTemp = maxTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                            (year, station, temp): temp)
 
-maxTemp = sqlContext.sql("SELECT FIRST(year), FIRST(station), MAX(temp) AS maxTemp \
-                          FROM TempSchema \
-                          WHERE year >= 1950 AND year <= 2014 \
-                          GROUP BY year \
-                          ORDER BY maxTemp DESC")
+maxTemp.saveAsTextFile(oFile1)
 
-maxTemp.coalesce(1).saveAsTextFile(oFile2)
+"""
+Q2. year, station with the min, minValue ORDER BY minValue DESC
+"""
+minTemp = sqlContext.sql("""
+        SELECT DISTINCT(table1.year) AS year,
+                FIRST(table1.station) AS station,
+                FIRST(temp) AS temp
+        FROM TempSchema AS table1
+        INNER JOIN
+        (
+        SELECT year, MIN(temp) AS min_temp
+        FROM TempSchema
+        GROUP BY year
+        ) AS table2
+        ON table1.year = table2.year
+        WHERE table1.temp = table2.min_temp
+        GROUP BY table1.year
+        ORDER BY temp DESC
+        """
+)
+
+minTemp = minTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                            (year, station, temp): temp)
+
+minTemp.saveAsTextFile(oFile2)
 ```
 
-### output:
-```
-[Row(year=u'1990', station=u'106500', minTemp=-35.0),
-Row(year=u'1952', station=u'108320', minTemp=-35.5), 
-Row(year=u'1974', station=u'106270', minTemp=-35.6), 
-Row(year=u'1954', station=u'103090', minTemp=-36.0), 
-Row(year=u'1992', station=u'107400', minTemp=-36.1), 
-Row(year=u'1975', station=u'105370', minTemp=-37.0), 
-Row(year=u'1972', station=u'105360', minTemp=-37.5), 
-Row(year=u'1995', station=u'103410', minTemp=-37.6), 
-Row(year=u'2000', station=u'105220', minTemp=-37.6), 
-Row(year=u'1957', station=u'108170', minTemp=-37.8)]
-```
-### output:
-```
-[Row(year=u'1975', station=u'105370', maxTemp=36.1), 
-Row(year=u'1992', station=u'107400', maxTemp=35.4), 
-Row(year=u'1994', station=u'105370', maxTemp=34.7), 
-Row(year=u'2010', station=u'105260', maxTemp=34.4), 
-Row(year=u'2014', station=u'108110', maxTemp=34.4), 
-Row(year=u'1989', station=u'105370', maxTemp=33.9), 
-Row(year=u'1982', station=u'107530', maxTemp=33.8), 
-Row(year=u'1968', station=u'106270', maxTemp=33.7), 
-Row(year=u'1966', station=u'103410', maxTemp=33.5), 
-Row(year=u'1983', station=u'106580', maxTemp=33.3)]
+### Max Temp:
+```{r eval=FALSE}
+print maxTemp.take(10)
+[Row(year=u'1975', station=u'86200', temp=36.1), 
+ Row(year=u'1992', station=u'63600', temp=35.4), 
+ Row(year=u'1994', station=u'117160', temp=34.7), 
+ Row(year=u'2014', station=u'96560', temp=34.4), 
+ Row(year=u'2010', station=u'75250', temp=34.4), 
+ Row(year=u'1947', station=u'53770', temp=34.3), 
+ Row(year=u'1989', station=u'63050', temp=33.9), 
+ Row(year=u'1982', station=u'94050', temp=33.8), 
+ Row(year=u'1968', station=u'137100', temp=33.7), 
+ Row(year=u'1966', station=u'151640', temp=33.5)]
 ```
 
-## 2. Count the number of readings for each month in the period of 1950-2014 which are higher than 10 degrees. Repeat the exercise, this time taking only distinct readings from each station. That is, if a station reported a reading above 10 degrees in some month, then it appears only once in the count for that month.  
- * `year, month, value ORDER BY value DESC`
- * `year, month, value ORDER BY value DESC`
-
-### spark_sql_temp_count_extractor.py:
+### Min Temp:
+```{r eval=FALSE}
+print minTemp.take(10)
+[Row(year=u'1944', station=u'108320', temp=-10.4), 
+ Row(year=u'1943', station=u'108320', temp=-13.5), 
+ Row(year=u'1941', station=u'108320', temp=-21.0), 
+ Row(year=u'1946', station=u'139570', temp=-26.0), 
+ Row(year=u'1945', station=u'139570', temp=-26.3), 
+ Row(year=u'1948', station=u'139570', temp=-30.0), 
+ Row(year=u'1947', station=u'139570', temp=-32.0), 
+ Row(year=u'1942', station=u'66120', temp=-32.4), 
+ Row(year=u'1990', station=u'147270', temp=-35.0), 
+ Row(year=u'1949', station=u'167980', temp=-35.0)]
 ```
+
+# Assignment 2
+
+# Questions:
+  * `year, month, value ORDER BY value DESC`
+  * `year, month, value ORDER BY value DESC`
+
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -94,10 +143,10 @@ Created on Mon Dec 12 17:06:24 2016
 """
 from pyspark import SparkContext
 from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
 
 iFile = 'data/temperature-readings.csv'
-oFile1 = 'data/sql_over_ten_mth_temp_counts'
-oFile2 = 'data/sql_over_ten_temp_distinct_counts'
+oFile = 'data/sql_over_ten_temp_distinct_counts'
 
 
 sc = SparkContext(appName = "TempCounterSparkSQLJob")
@@ -106,69 +155,64 @@ sqlContext = SQLContext(sc)
 
 inFile = sc.textFile(iFile) \
             .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], time = l[2], \
-                    temp = float(l[3]), quality = l[4]))
+            .map(lambda obs: \
+                Row(station = obs[0], date = obs[1],  \
+                    year = obs[1].split("-")[0], \
+                    month = obs[1].split("-")[1], time = obs[2], \
+                    yymm = obs[1][:7], \
+                    temp = float(obs[3]), quality = obs[4]))
 
 tempSchema = sqlContext.createDataFrame(inFile)
 
 tempSchema.registerTempTable("TempSchema")
 
+"""
+Q1. Temperatures readings higher than 10 degrees
+"""
 overTenTemp = sqlContext.sql(" \
-                        SELECT FIRST(year) AS year, FIRST(month) AS month, COUNT(temp) AS counts\
+                        SELECT FIRST(year), FIRST(month), COUNT(temp) AS counts\
                         FROM TempSchema \
                         WHERE temp >= 10 AND year >= 1950 AND year <= 2014\
                         GROUP BY year, month \
                         ORDER BY counts DESC")
 
-overTenTemp.saveAsTextFile(oFile1)
-
-overTenTempDistinct = sqlContext.sql(" \
-                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station,\
-                                COUNT(DISTINCT temp) AS counts\
-                        FROM TempSchema \
-                        WHERE temp >= 10 AND year >= 1950 AND year <= 2014\
-                        GROUP BY year, month, station \
-                        ORDER BY counts DESC")
+"""
+Q2. Distinct Temperatures readings higher than 10 degrees
+"""
+overTenTempDistinct = tempSchema.filter(tempSchema["temp"] > 10) \
+                                .groupBy("yymm") \
+                                .agg(F.countDistinct("station").alias("count"))
 
 
-overTenTempDistinct.saveAsTextFile(oFile2)
+overTenTempDistinct = overTenTempDistinct.rdd.repartition(1) \
+                            .sortBy(ascending = False, keyfunc = lambda \
+                                    (yymm, counts): counts)
+
+overTenTempDistinct.saveAsTextFile(oFile)
 ```
 
-### output:
-```
-[Row(year=u'2014', month=u'07', counts=147910), 
-Row(year=u'2011', month=u'07', counts=147060), 
-Row(year=u'2010', month=u'07', counts=143860), 
-Row(year=u'2012', month=u'07', counts=138166), 
-Row(year=u'2013', month=u'07', counts=134297), 
-Row(year=u'2009', month=u'07', counts=133570), 
-Row(year=u'2011', month=u'08', counts=133483), 
-Row(year=u'2009', month=u'08', counts=129007), 
-Row(year=u'2013', month=u'08', counts=128920), 
-Row(year=u'2003', month=u'07', counts=128360)]
-```
-### output:
-```
-[Row(year=u'1994', month=u'07', station=u'95170', counts=208), 
-Row(year=u'1994', month=u'07', station=u'107400', counts=206), 
-Row(year=u'1994', month=u'07', station=u'86340', counts=206), 
-Row(year=u'1994', month=u'07', station=u'78300', counts=205), 
-Row(year=u'1994', month=u'07', station=u'97510', counts=205), 
-Row(year=u'1994', month=u'07', station=u'86440', counts=205), 
-Row(year=u'1994', month=u'07', station=u'64560', counts=204), 
-Row(year=u'1994', month=u'07', station=u'53220', counts=203), 
-Row(year=u'2014', month=u'07', station=u'92410', counts=202), 
-Row(year=u'2010', month=u'07', station=u'75250', counts=201)]
+### Distinct Temperatures readings counts:
+```{r eval=FALSE}
+print overTenTempDistinct.take(10)
+[Row(yymm=u'1972-10', count=378), 
+ Row(yymm=u'1973-05', count=377), 
+ Row(yymm=u'1973-06', count=377), 
+ Row(yymm=u'1973-09', count=376), 
+ Row(yymm=u'1972-08', count=376), 
+ Row(yymm=u'1972-05', count=375), 
+ Row(yymm=u'1972-06', count=375), 
+ Row(yymm=u'1972-09', count=375), 
+ Row(yymm=u'1971-08', count=375), 
+ Row(yymm=u'1972-07', count=374)]
 ```
 
-## 3. Find the average monthly temperature for each available station in Sweden. Your result should include average temperature for each station for each month in the period of 1960-2014. Bear in mind that not every station has the readings for each month in this timeframe.
+# Assignment 3
+
+# Questions:
  * `year, month, station, avgMonthlyTemperature ORDER BY avgMonthlyTemperature DESC`
  
-### spark_sql_temp_avg_extractor.py:
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -188,47 +232,60 @@ sqlContext = SQLContext(sc)
 
 inFile = sc.textFile(iFile) \
             .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], time = l[2], \
-                    temp = float(l[3]), quality = l[4]))
+                       .filter(lambda obs:
+                               (int(obs[1][:4]) >= 1960 and
+                                int(obs[1][:4]) <= 2014)) \
+                       .map(lambda obs: Row(station=int(obs[0]),
+                                            day=obs[1],
+                                            month=obs[1][:7],
+                                            temp=float(obs[3])))
 
 tempSchema = sqlContext.createDataFrame(inFile)
 
 tempSchema.registerTempTable("TempSchema")
 
-avgMonthlyTemp = sqlContext.sql(" \
-                        SELECT FIRST(year) AS year, FIRST(month) AS month, FIRST(station) AS station,\
-                                AVG(temp) AS AvgTemp \
-                        FROM TempSchema \
-                        WHERE year >= 1960 AND year <= 2014 \
-                        GROUP BY year, month, station \
-                        ORDER BY AvgTemp DESC")
+avgMonthTemp = sqlContext.sql(
+        """
+        SELECT mytbl.month, mytbl.station, AVG(mytbl.max_temp + mytbl.min_temp) / 2 AS avg_temp
+        FROM
+        (
+        SELECT month, station, MIN(temp) AS min_temp, MAX(temp) AS max_temp
+        FROM TempSchema
+        GROUP BY day, month, station
+        ) AS mytbl
+        GROUP BY mytbl.month, mytbl.station
+        ORDER BY AVG(mytbl.max_temp + mytbl.min_temp) / 2 DESC
+        """
+    )
 
-avgMonthlyTemp.saveAsTextFile(oFile)
+avgMonthTemp.rdd.repartition(1).sortBy(ascending=False, 
+                                keyfunc=lambda (month, station, temp): temp)
+
+avgMonthTemp.saveAsTextFile(oFile)
 ```
 
-### output:
-```
-[Row(year=u'2014', month=u'07', station=u'96000', AvgTemp=26.3), 
-Row(year=u'1994', month=u'07', station=u'65450', AvgTemp=23.65483870967742), 
-Row(year=u'1994', month=u'07', station=u'95160', AvgTemp=23.505376344086027), 
-Row(year=u'1994', month=u'07', station=u'75120', AvgTemp=23.26881720430107), 
-Row(year=u'1994', month=u'07', station=u'105260', AvgTemp=23.143820224719107), 
-Row(year=u'1994', month=u'07', station=u'85280', AvgTemp=23.108602150537635), 
-Row(year=u'1983', month=u'08', station=u'54550', AvgTemp=23.0), 
-Row(year=u'1975', month=u'08', station=u'54550', AvgTemp=22.9625), 
-Row(year=u'1994', month=u'07', station=u'96550', AvgTemp=22.957894736842114), 
-Row(year=u'1994', month=u'07', station=u'96000', AvgTemp=22.931182795698923)]
+### Average monthly temperatures:
+```{r eval=FALSE}
+print avgMonthTemp.take(10) 
+[Row(month=u'2014-07', station=96000, avg_temp=26.3), 
+Row(month=u'1994-07', station=96550, avg_temp=23.07105263157895), 
+Row(month=u'1983-08', station=54550, avg_temp=23.0), 
+Row(month=u'1994-07', station=78140, avg_temp=22.970967741935485), 
+Row(month=u'1994-07', station=85280, avg_temp=22.872580645161293), 
+Row(month=u'1994-07', station=75120, avg_temp=22.858064516129033), 
+Row(month=u'1994-07', station=65450, avg_temp=22.856451612903232), 
+Row(month=u'1994-07', station=96000, avg_temp=22.808064516129033), 
+Row(month=u'1994-07', station=95160, avg_temp=22.764516129032256), 
+Row(month=u'1994-07', station=86200, avg_temp=22.711290322580645)]
 ```
 
-## 4. Provide a list of stations with their associated maximum measured temperatures and maximum measured daily precipitation. Show only those stations where the maximum temperature is between 25 and 30 degrees and maximum daily precipitation is between 100 mm and 200 mm.
- * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC` 
+# Assignment 4
 
-### spark_sql_max_temp_prec_extractor.py:
-
-```
+# Questions:
+ * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
+ 
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -248,74 +305,63 @@ sc = SparkContext(appName="MaxTempPrecExtractorSparkSQLJob")
 sqlContext = SQLContext(sc)
 
 # Temperatures
-inFile = sc.textFile(iFile) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    temp = float(l[3]), \
-                    quality = l[4]))
+inFile = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                                      .map(lambda obs: Row(station=int(obs[0]),
+                                                           temp=float(obs[3])))
 
 tempSchema = sqlContext.createDataFrame(inFile)
-
 tempSchema.registerTempTable("TempSchema")
 
 # precipitation
-inFile2 = sc.textFile(iFile2) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    prec = float(l[3]), \
-                    quality = l[4]))
+inFile2 = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+                                          .map(lambda obs: Row(station=int(obs[0]),
+                                                               day=obs[1],
+                                                               precip=float(obs[3])))
 
 precSchema = sqlContext.createDataFrame(inFile2)
-
 precSchema.registerTempTable("PrecSchema")
 
-tempPrec = sqlContext.sql(" \
-                SELECT t.station, \
-                        MAX(t.temp) AS maxTemp, \
-                        MAX(p.dailyPrec) AS maxDailyPrec\
-                FROM TempSchema t, \
-                    (SELECT station, SUM(prec) as dailyPrec \
-                    FROM PrecSchema \
-                    GROUP BY station, day) p \
-                WHERE t.station = p.station AND \
-                        t.temp >= 25 AND t.temp <= 30 AND \
-                        p.dailyPrec >= 100 AND p.dailyPrec <= 200 \
-                GROUP BY t.station")
+combinedTempPrec = sqlContext.sql(
+        """
+        SELECT tr.station, MAX(temp) AS max_temp, MAX(precip) AS max_precip
+        FROM
+        TempSchema AS tr
+        INNER JOIN
+        (
+        SELECT station, SUM(precip) AS precip
+        FROM PrecSchema
+        GROUP BY day, station
+        ) AS pr
+        ON tr.station = pr.station
+        WHERE temp >= 25 AND temp <= 30
+        AND precip >= 100 AND precip <= 200
+        GROUP BY tr.station
+        ORDER BY tr.station DESC
+        """
+    )
 
-tempPrec.saveAsTextFile(oFile)
+combinedTempPrec.rdd.repartition(1).sortBy(ascending=False, 
+                        keyfunc=lambda (station, temp, precip): station)
+
+combinedTempPrec.saveAsTextFile(oFile)
 ```
 
-### output:
-```
-[Row(station=u'147560', maxTemp=29.9, maxDailyPrec=177.89999999999975), 
-Row(station=u'68560', maxTemp=28.5, maxDailyPrec=153.19999999999996), 
-Row(station=u'63160', maxTemp=29.9, maxDailyPrec=186.69999999999996), 
-Row(station=u'84310', maxTemp=30.0, maxDailyPrec=116.8), 
-Row(station=u'167710', maxTemp=29.6, maxDailyPrec=193.39999999999944), 
-Row(station=u'107140', maxTemp=30.0, maxDailyPrec=197.59999999999948), 
-Row(station=u'183750', maxTemp=29.4, maxDailyPrec=188.9999999999996), 
-Row(station=u'66110', maxTemp=26.3, maxDailyPrec=153.09999999999985), 
-Row(station=u'127130', maxTemp=29.9, maxDailyPrec=193.19999999999965), 
-Row(station=u'96190', maxTemp=30.0, maxDailyPrec=194.9999999999995)]
+### Max daily precipitation:
+```{r eval=FALSE}
+print combinedTempPrec.take(10)
+[Row(station=97510, max_temp=30.0, max_precip=103.99999999999999), 
+Row(station=75250, max_temp=30.0, max_precip=101.8), 
+Row(station=71420, max_temp=30.0, max_precip=106.3), 
+Row(station=52350, max_temp=30.0, max_precip=101.6)]
 ```
 
-## 5. Calculate the average monthly precipitation for the Östergotland region (list of stations is provided in the separate file). In order to do this, you will first need to calculate the total monthly precipitation for each station before calculating the monthly average (by averaging over stations).
+# Assignment 5
+
+# Questions:
  * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
 
-### spark_sql_ostergot_avg_prec_extractor.py:
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -334,75 +380,167 @@ sc = SparkContext(appName="OstergotlandAvgMonthlyPrecSparkSQLJob")
 
 sqlContext = SQLContext(sc)
 
-
 # Ostergotland Stations
-ostergotlandStations = sc.textFile(iFile) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda l: int(l[0])) \
-            .distinct().collect()
+ostergotlandStations = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                           .map(lambda obs: int(obs[0])) \
+                           .distinct().collect()
 
-isOstergotlandStation = (lambda s: s in ostergotlandStations)
+ostergotlandStations = sc.broadcast(ostergotlandStations)
 
-inFile = sc.textFile(iFile2) \
-            .map(lambda line: line.split(";")) \
-            .filter(lambda l: isOstergotlandStation(int(l[0]))) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    prec = float(l[3]), \
-                    quality = l[4]))
+ostergotlandStations = {station: True for station in ostergotlandStations.value}
 
-precSchema = sqlContext.createDataFrame(inFile)
+precipitations = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+                                          .filter(lambda obs: ostergotlandStations.get(int(obs[0]), False)) \
+                                          .map(lambda obs: Row(day=obs[1],
+                                                               month=obs[1][:7],
+                                                               station=int(obs[0]),
+                                                               precip=float(obs[3])))
 
+precSchema = sqlContext.createDataFrame(precipitations)
 precSchema.registerTempTable("PrecSchema")
 
-avgPrec = sqlContext.sql(" \
-                    SELECT ps.year AS year, ps.month AS month, AVG(prec.totPrec) AS avgMonthPrec \
-                    FROM PrecSchema ps, \
-                        (SELECT year, month, station, SUM(prec) AS totPrec \
-                        FROM PrecSchema  \
-                        GROUP BY year, month, station) AS prec \
-                    WHERE ps.station = prec.station AND \
-                           ps.year = prec.year AND \
-                            ps.month = prec.month AND \
-                            ps.year >= 1993 AND ps.year <= 2016 \
-                    GROUP BY ps.year, ps.month")
+avgMthPrec = sqlContext.sql(
+        """
+        SELECT mytbl2.month, AVG(mytbl2.precip) AS avg_precip
+        FROM
+        (
+        SELECT mytbl1.month, mytbl1.station, SUM(mytbl1.precip) AS precip
+        FROM
+        (
+        SELECT month, station, SUM(precip) AS precip
+        FROM PrecSchema
+        GROUP BY day, month, station
+        ) AS mytbl1
+        GROUP BY mytbl1.month, mytbl1.station
+        ) AS mytbl2
+        GROUP BY mytbl2.month
+        ORDER BY mytbl2.month DESC
+        """
+    )
 
-avgPrec = avgPrec.rdd.repartition(1) \
-                .sortBy(ascending = False, keyfunc = lambda \
-                    (year, month, prec): (year, month))
+avgMthPrec.rdd.repartition(1).sortBy(ascending=False, keyfunc=lambda (month, precip): month)
 
-avgPrec.saveAsTextFile(oFile)
+avgMthPrec.saveAsTextFile(oFile)
 ```
 
-### output:
-```
-[Row(year=u'2006', month=u'12', avgMonthPrec=29.75475174118164), 
-Row(year=u'1995', month=u'01', avgMonthPrec=26.000000000000004), 
-Row(year=u'1995', month=u'02', avgMonthPrec=31.799999999999613), 
-Row(year=u'1995', month=u'03', avgMonthPrec=34.40000000000035), 
-Row(year=u'1995', month=u'04', avgMonthPrec=61.69999999999967), 
-Row(year=u'2013', month=u'01', avgMonthPrec=21.572687760779043), 
-Row(year=u'1995', month=u'05', avgMonthPrec=26.000000000000004), 
-Row(year=u'2007', month=u'01', avgMonthPrec=68.67610803324125), 
-Row(year=u'2013', month=u'02', avgMonthPrec=25.812057286626647), 
-Row(year=u'1995', month=u'06', avgMonthPrec=97.19999999999871)]
+### Östergotland average monthly precipitation:
+```{r eval=FALSE}
+print avgMthPrec.take(10)
+[Row(month=u'2016-07', avg_precip=0.0), 
+ Row(month=u'2016-06', avg_precip=47.6625), 
+ Row(month=u'2016-05', avg_precip=29.250000000000004), 
+ Row(month=u'2016-04', avg_precip=26.9), 
+ Row(month=u'2016-03', avg_precip=19.9625), 
+ Row(month=u'2016-02', avg_precip=21.5625), 
+ Row(month=u'2016-01', avg_precip=22.325), 
+ Row(month=u'2015-12', avg_precip=28.925), 
+ Row(month=u'2015-11', avg_precip=63.887499999999996), 
+ Row(month=u'2015-10', avg_precip=2.2625)]
 ```
 
-## 6. Compare the average monthly temperature (find the difference) in the period 1950-2014 for all stations in Östergotland with long-term monthly averages in the period of 1950-1980.
+# Assignment 6
+
+# Questions:
  * `Year, month, difference ORDER BY year DESC, month DESC`
 
-### spark_ostergot_avg_temp_diff_extractor.py:
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec 12 17:06:24 2016
+
+@author: ashraf
+"""
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+
+iFile = 'data/stations-Ostergotland.csv'
+iFile2 = 'data/temperature-readings.csv'
+oFile = 'data/OstergotlandAveMonthlyDiffTemp'
+
+sc = SparkContext(appName="OstergotlandAvgMonthlyTempDiffSparkSQLJob")
+
+sqlContext = SQLContext(sc)
+
+# Ostergotland Stations
+ostergotlandStations = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                           .map(lambda obs: int(obs[0])) \
+                           .distinct().collect()
+
+ostergotlandStations = sc.broadcast(ostergotlandStations)
+
+ostergotlandStations = {station: True for station in ostergotlandStations.value}
+
+temperatures = sc.textFile(iFile2) \
+            .map(lambda line: line.split(";")) \
+            .filter(lambda obs: ostergotlandStations.get(int(obs[0]), False)) \
+            .map(lambda obs: \
+                Row(station = obs[0], \
+                    date = obs[1],  \
+                    year = obs[1].split("-")[0], \
+                    month = obs[1].split("-")[1], \
+                    day = obs[1].split("-")[2], \
+                    yymm = obs[1][:7], \
+                    yymmdd = obs[1], \
+                    time = obs[2], \
+                    temp = float(obs[3]), \
+                    quality = obs[4]))
+
+tempSchema = sqlContext.createDataFrame(temperatures)
+tempSchema.registerTempTable("TempSchema")
+
+avgMthTemp = sqlContext.sql("""
+        SELECT one.yymm,
+            AVG(one.minTemp + one.maxTemp) / 2 AS avgTemp
+        FROM
+        (
+        SELECT yymm,
+                year,
+                yymmdd,
+                MIN(temp) AS minTemp,
+                MAX(temp) AS maxTemp
+        FROM TempSchema
+        GROUP BY yymmdd,
+                    yymm,
+                    year,
+                    station
+        ) AS one
+        WHERE one.year >= 1950 AND one.year <= 2014
+        GROUP BY one.yymm
+        """)
+
+longTermAvgTemp = avgMthTemp \
+                    .filter(F.substring(avgMthTemp["yymm"], 1, 4) <= 1980) \
+                    .groupBy(F.substring(avgMthTemp["yymm"], 6, 7).alias("month")) \
+                    .agg(F.avg(avgMthTemp["avgTemp"]).alias("longTermAvgTemp"))
+
+diffTemp = avgMthTemp.join(longTermAvgTemp,
+                                (F.substring(avgMthTemp["yymm"], 6, 7) ==
+                                  longTermAvgTemp["month"]), "inner")
+
+diffTemp = diffTemp.select(diffTemp["yymm"],
+                          (F.abs(diffTemp["avgTemp"]) -
+                             F.abs(diffTemp["longTermAvgTemp"])).alias("diffTemp"))
+
+diffTemp = diffTemp.rdd.repartition(1).sortBy(ascending = False, 
+                             keyfunc = lambda (yymm, diff): yymm)
+
+diffTemp.saveAsTextFile(oFile)
 ```
 
-```
-
-### output:
-```
-
+### Östergotland average monthly precipitation temperature difference:
+```{r eval=FALSE}
+print diffTemp.take(10)
+[Row(yymm=u'2014-12', diffTemp=-0.7938517834097853), 
+ Row(yymm=u'2014-11', diffTemp=2.0635396726928987), 
+ Row(yymm=u'2014-10', diffTemp=1.521957490617976), 
+ Row(yymm=u'2014-09', diffTemp=0.06105818643722749), 
+ Row(yymm=u'2014-08', diffTemp=-0.6426470719706963), 
+ Row(yymm=u'2014-07', diffTemp=2.1059218387139893), 
+ Row(yymm=u'2014-06', diffTemp=-1.8073686197315233), 
+ Row(yymm=u'2014-05', diffTemp=0.26719065014070154), 
+ Row(yymm=u'2014-04', diffTemp=2.0661931589915437), 
+ Row(yymm=u'2014-03', diffTemp=3.176498950234642)]
 ```
 

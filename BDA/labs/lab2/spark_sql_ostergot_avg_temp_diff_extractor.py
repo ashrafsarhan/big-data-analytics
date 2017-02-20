@@ -16,78 +16,68 @@ sc = SparkContext(appName="OstergotlandAvgMonthlyTempDiffSparkSQLJob")
 
 sqlContext = SQLContext(sc)
 
-
 # Ostergotland Stations
-ostergotlandStations = sc.textFile(iFile) \
+ostergotlandStations = sc.textFile(iFile).map(lambda line: line.split(";")) \
+                           .map(lambda obs: int(obs[0])) \
+                           .distinct().collect()
+
+ostergotlandStations = sc.broadcast(ostergotlandStations)
+
+ostergotlandStations = {station: True for station in ostergotlandStations.value}
+
+temperatures = sc.textFile(iFile2) \
             .map(lambda line: line.split(";")) \
-            .map(lambda l: int(l[0])) \
-            .distinct().collect()
+            .filter(lambda obs: ostergotlandStations.get(int(obs[0]), False)) \
+            .map(lambda obs: \
+                Row(station = obs[0], \
+                    date = obs[1],  \
+                    year = obs[1].split("-")[0], \
+                    month = obs[1].split("-")[1], \
+                    day = obs[1].split("-")[2], \
+                    yymm = obs[1][:7], \
+                    yymmdd = obs[1], \
+                    time = obs[2], \
+                    temp = float(obs[3]), \
+                    quality = obs[4]))
 
-isOstergotlandStation = (lambda s: s in ostergotlandStations)
-
-inFile = sc.textFile(iFile2) \
-            .map(lambda line: line.split(";")) \
-            .filter(lambda l: isOstergotlandStation(int(l[0]))) \
-            .map(lambda l: \
-                Row(station = l[0], \
-                    date = l[1],  \
-                    year = l[1].split("-")[0], \
-                    month = l[1].split("-")[1], \
-                    day = l[1].split("-")[2], \
-                    time = l[2], \
-                    temp = float(l[3]), \
-                    quality = l[4]))
-
-tempSchema = sqlContext.createDataFrame(inFile)
-
+tempSchema = sqlContext.createDataFrame(temperatures)
 tempSchema.registerTempTable("TempSchema")
 
+avgMthTemp = sqlContext.sql("""
+        SELECT one.yymm,
+            AVG(one.minTemp + one.maxTemp) / 2 AS avgTemp
+        FROM
+        (
+        SELECT yymm,
+                year,
+                yymmdd,
+                MIN(temp) AS minTemp,
+                MAX(temp) AS maxTemp
+        FROM TempSchema
+        GROUP BY yymmdd,
+                    yymm,
+                    year,
+                    station
+        ) AS one
+        WHERE one.year >= 1950 AND one.year <= 2014
+        GROUP BY one.yymm
+        """)
 
-daily_temp = sqlContext.sql(" \
-                    SELECT ts.station AS station, ts.date AS date, ts.year AS year, ts.month AS month, ts.day AS day, \
-                           min.minTemp AS minTemp, max.maxTemp AS maxTemp \
-                    FROM TempSchema ts \
-                   (SELECT FIRST(station) AS station, FIRST(date) AS date, MIN(temp) minTemp \
-                    FROM TempSchema ts\
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY station, date) AS min, \
-                   (SELECT FIRST(station) AS station, FIRST(date) AS date, MAX(temp) maxTemp \
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY station, date) AS max \
-                    WHERE ts.station = min.station = max.station AND ts.date = min.date = max.date")
+longTermAvgTemp = avgMthTemp \
+                    .filter(F.substring(avgMthTemp["yymm"], 1, 4) <= 1980) \
+                    .groupBy(F.substring(avgMthTemp["yymm"], 6, 7).alias("month")) \
+                    .agg(F.avg(avgMthTemp["avgTemp"]).alias("longTermAvgTemp"))
 
+diffTemp = avgMthTemp.join(longTermAvgTemp,
+                                (F.substring(avgMthTemp["yymm"], 6, 7) ==
+                                  longTermAvgTemp["month"]), "inner")
 
-daily_temp = sqlContext.sql(" \
-                    SELECT min.station AS station, min.year AS year, min.month AS month, min.day AS day, AVG(min.minTemp + max.maxTemp) AS avgTemp \
-                    FROM \
-                   (SELECT FIRST(station) AS station, FIRST(year) AS year, FIRST(month) AS month, FIRST(day) AS day, MIN(temp) minTemp \
-                    FROM TempSchema ts \
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY ts.date) AS min, \
-                   (SELECT FIRST(station) AS station, FIRST(year) AS year, FIRST(month) AS month, FIRST(day) AS day, MAX(temp) maxTemp \
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY ts.date) AS max \
-                    WHERE min.station == max.station AND min.year == max.year AND min.month == max.month AND min.day == max.day\
-                    GROUP BY station, year, month, day")
+diffTemp = diffTemp.select(diffTemp["yymm"],
+                          (F.abs(diffTemp["avgTemp"]) -
+                             F.abs(diffTemp["longTermAvgTemp"])).alias("diffTemp"))
 
+diffTemp = diffTemp.rdd.repartition(1).sortBy(ascending = False, 
+                             keyfunc = lambda (yymm, diff): yymm)
 
-daily_min_temp = sqlContext.sql(" \
-                    SELECT FIRST(station) AS station, FIRST(year) AS year, FIRST(month) AS month, FIRST(day) AS day, MIN(temp) minTemp \
-                    FROM TempSchema ts \
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY ts.date")
+diffTemp.saveAsTextFile(oFile)
 
-daily_max_temp = sqlContext.sql(" \
-                    SELECT FIRST(station) AS station, FIRST(year) AS year, FIRST(month) AS month, FIRST(day) AS day, MAX(temp) maxTemp \
-                    FROM TempSchema ts \
-                    WHERE ts.year >= 1950 AND ts.year <= 1980 \
-                    GROUP BY ts.date")
-
-daily_temp = daily_min_temp.leftOuterJoin(daily_max_temp, (daily_min_temp.year == daily_max_temp.year) & (daily_min_temp.month == daily_max_temp.month) & (daily_min_temp.day == daily_max_temp.day))
-
-
-avgPrec = avgPrec.rdd.repartition(1) \
-                .sortBy(ascending = False, keyfunc = lambda \
-                    (year, month, avgDiffTemp): (year, month))
-
-avgPrec.saveAsTextFile(oFile)
