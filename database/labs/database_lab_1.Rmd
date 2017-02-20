@@ -8,11 +8,12 @@ output: pdf_document
 
 ### 1. List all employees, i.e. all tuples in the jbemployee relation.
 
-```
+```{r eval=FALSE}
 SELECT * 
 FROM jbemployee;
 ```
-```
+
+```{r eval=FALSE}
 +------+--------------------+--------+---------+-----------+-----------+
 | id   | name               | salary | manager | birthyear | startyear |
 +------+--------------------+--------+---------+-----------+-----------+
@@ -47,12 +48,13 @@ FROM jbemployee;
     
 ### 2. List the name of all departments in alphabetical order. Note: by “name” we mean the name attribute for all tuples in the _jbdept_ relation.
 
-```
+```{r eval=FALSE}
 SELECT jbdept.name AS dept_name 
 FROM jbdept 
 ORDER BY dept_name;
 ```
-```
+
+```{r eval=FALSE}
 +------------------+
 | dept_name        |
 +------------------+
@@ -81,12 +83,13 @@ ORDER BY dept_name;
 
 ### 3. What parts are not in store, i.e. qoh = 0? (qoh = Quantity On Hand)
 
-```
+```{r eval=FALSE}
 SELECT * 
 FROM jbparts 
 WHERE jbparts.qoh=0;
 ```
-```
+
+```{r eval=FALSE}
 +----+-------------------+-------+--------+------+
 | id | name              | color | weight | qoh  |
 +----+-------------------+-------+--------+------+
@@ -100,11 +103,12 @@ WHERE jbparts.qoh=0;
 
 ### 4. Which employees have a salary between 9000 (included) and 10000 (included)?
 
-```
+```{r eval=FALSE}
 SELECT * FROM jbemployee 
 WHERE jbemployee.salary BETWEEN 9000 AND 10000;
 ```
-```
+
+```{r eval=FALSE}
 +-----+----------------+--------+---------+-----------+-----------+
 | id  | name           | salary | manager | birthyear | startyear |
 +-----+----------------+--------+---------+-----------+-----------+
@@ -118,11 +122,12 @@ WHERE jbemployee.salary BETWEEN 9000 AND 10000;
 
 ### 5. What was the age of each employee when they started working (startyear)?
 
-```
+```{r eval=FALSE}
 SELECT emp.id, emp.name, (emp.startyear-emp.birthyear) AS age 
 FROM jbemployee AS emp;
 ```
-```
+
+```{r eval=FALSE}
 +------+--------------------+------+
 | id   | name               | age  |
 +------+--------------------+------+
@@ -157,30 +162,36 @@ FROM jbemployee AS emp;
 
 ### 6. Which employees have a last name ending with “son”?
 
+```{r eval=FALSE}
+SELECT emp.id, SUBSTRING_INDEX(emp.name , ',', 1) AS firstname, 
+SUBSTRING_INDEX(emp.name , ',', -1) AS lastname, emp.salary, 
+emp.manager, emp.birthyear, emp.startyear
+FROM jb.jbemployee AS emp 
+WHERE SUBSTRING_INDEX(emp.name , ',', -1) LIKE '%son';
 ```
-SELECT * 
-FROM jbemployee AS emp 
-WHERE emp.name LIKE '%son';
-```
-```
-+------+----------------+--------+---------+-----------+-----------+
-| id   | name           | salary | manager | birthyear | startyear |
-+------+----------------+--------+---------+-----------+-----------+
-| 5219 | Schwarz, Jason |  13374 |      33 |      1944 |      1959 |
-+------+----------------+--------+---------+-----------+-----------+
+
+\newpage
+
+```{r eval=FALSE}
++------+-----------+----------+--------+---------+-----------+-----------+
+| id   | firstname | lastname | salary | manager | birthyear | startyear |
++------+-----------+----------+--------+---------+-----------+-----------+
+| 5219 | Schwarz   |  Jason   |  13374 |      33 |      1944 |      1959 |
++------+-----------+----------+--------+---------+-----------+-----------+
 1 row in set (0,00 sec)
 ```
 
 ### 7. Which items (note items, not parts) have been delivered by a supplier called Fisher-Price? Formulate this query using a subquery in the where-clause.
 
-```
+```{r eval=FALSE}
 SELECT * 
 FROM jbitem AS itm 
 WHERE itm.supplier = (SELECT sup.id 
                       FROM jbsupplier as sup 
                       WHERE sup.name = 'Fisher-Price');
 ```
-```
+
+```{r eval=FALSE}
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
 +-----+-----------------+------+-------+------+----------+
@@ -193,12 +204,13 @@ WHERE itm.supplier = (SELECT sup.id
 
 ### 8. Formulate the same query as above, but without a subquery.
 
-```
+```{r eval=FALSE}
 SELECT itm.id, itm.name, itm.dept, itm.price, itm.qoh, itm.supplier 
 FROM jbitem AS itm, jbsupplier AS sup 
 WHERE itm.supplier = sup.id AND sup.name = 'Fisher-Price';
 ```
-```
+
+```{r eval=FALSE}
 +-----+-----------------+------+-------+------+----------+
 | id  | name            | dept | price | qoh  | supplier |
 +-----+-----------------+------+-------+------+----------+
@@ -211,12 +223,13 @@ WHERE itm.supplier = sup.id AND sup.name = 'Fisher-Price';
 
 ### 9. Show all cities that have suppliers located in them. Formulate this query using a subquery in the where-clause.
 
-```
+```{r eval=FALSE}
 SELECT * FROM jbcity AS cty 
 WHERE cty.id IN (SELECT sup.city 
                  FROM jbsupplier AS sup);
 ```
-```
+
+```{r eval=FALSE}
 +-----+----------------+-------+
 | id  | name           | state |
 +-----+----------------+-------+
@@ -241,14 +254,15 @@ WHERE cty.id IN (SELECT sup.city
 
 ### 10. What is the name and color of the parts that are heavier than a card reader? Formulate this query using a subquery in the where-clause. (The SQL query must not contain the weight as a constant.)
 
-```
+```{r eval=FALSE}
 SELECT prts.name, prts.color 
 FROM jbparts AS prts 
 WHERE prts.weight > (SELECT prts.weight 
                      FROM jbparts AS prts 
                      WHERE prts.name = 'card reader');
 ```
-```
+
+```{r eval=FALSE}
 +--------------+--------+
 | name         | color  |
 +--------------+--------+
@@ -262,12 +276,13 @@ WHERE prts.weight > (SELECT prts.weight
 
 ### 11. Formulate the same query as above, but without a subquery. (The query must not contain the weight as a constant.)
 
-```
+```{r eval=FALSE}
 SELECT prts.name, prts.color 
 FROM jbparts AS prts, jbparts AS prts2 
 WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
 ```
-```
+
+```{r eval=FALSE}
 +--------------+--------+
 | name         | color  |
 +--------------+--------+
@@ -281,11 +296,12 @@ WHERE prts2.name = 'card reader' AND prts.weight > prts2.weight;
 
 ### 12. What is the average weight of black parts?
 
-```
+```{r eval=FALSE}
 SELECT avg(prts.weight) AS avg_weight 
 FROM jbparts AS prts WHERE prts.color = 'black';
 ```
-```
+
+```{r eval=FALSE}
 +------------+
 | avg_weight |
 +------------+
@@ -296,14 +312,15 @@ FROM jbparts AS prts WHERE prts.color = 'black';
 
 ### 13. What is the total weight of all parts that each supplier in Massachusetts (“Mass”) has delivered? Retrieve the name and the total weight for each of these suppliers. Do not forget to take the quantity of delivered parts into account. Note that one row should be returned for each supplier.
 
-```
+```{r eval=FALSE}
 SELECT sup.name, SUM(prts.weight*sp.quan) AS total_weight 
 FROM jb.jbparts AS prts, jbsupplier AS sup, jbsupply AS sp, jbcity AS cty 
 WHERE prts.id = sp.part AND sup.id = sp.supplier 
 AND sup.city = cty.id AND cty.state = 'Mass'
 GROUP BY sup.id;
 ```
-```
+
+```{r eval=FALSE}
 +--------------+--------------+
 | name         | total_weight |
 +--------------+--------------+
@@ -315,7 +332,7 @@ GROUP BY sup.id;
 
 ### 14. Create a new relation (a table), with the same attributes as the table items using the CREATE TABLE syntax where you define every attribute explicitly (i.e. not as a copy of another table). Then fill the table with all items that cost less than the average price for items. Remember to define primary and foreign keys in your table!
 
-```
+```{r eval=FALSE}
 CREATE TABLE jbitem_replica
     (
     `id` INT(11),
@@ -329,24 +346,29 @@ CREATE TABLE jbitem_replica
     FOREIGN KEY (`supplier`) REFERENCES `jbsupplier`(`id`)
     );
 ```
-```
+
+```{r eval=FALSE}
 Query OK, 0 rows affected (0,47 sec)
 ```
-```
+
+```{r eval=FALSE}
 INSERT INTO jb.jbitem_replica(`id`, `name`, `price`, `qoh`, `dept`, `supplier`)
     SELECT itm.id, itm.name, itm.price, itm.qoh, itm.dept, itm.supplier
     FROM jb.jbitem AS itm 
     WHERE (itm.price) < (SELECT AVG(jb.jbitem.price) FROM jb.jbitem);
 ```
-```
+
+```{r eval=FALSE}
 Query OK, 14 rows affected (0,14 sec)
 Records: 14  Duplicates: 0  Warnings: 0
 ```
-```
+
+```{r eval=FALSE}
 SELECT * 
 FROM jb.jbitem_replica;
 ```
-```
+
+```{r eval=FALSE}
 +-----+-----------------+-------+------+------+----------+
 | id  | name            | price | qoh  | dept | supplier |
 +-----+-----------------+-------+------+------+----------+
