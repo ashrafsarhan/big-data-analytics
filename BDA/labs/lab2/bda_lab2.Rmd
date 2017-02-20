@@ -4,9 +4,8 @@ subtitle: "BDA2 Spark SQL Exercises"
 author: "Ashraf Sarhan (ashsa762)"
 output: pdf_document
 ---
-# Assignment 1
+# Question 1:
 
-# Questions:
   * `year, station with the max, maxValue ORDER BY maxValue DESC`
   * `year, station with the min, minValue ORDER BY minValue DESC`
   
@@ -126,9 +125,8 @@ print minTemp.take(10)
  Row(year=u'1949', station=u'167980', temp=-35.0)]
 ```
 
-# Assignment 2
+# Question 2:
 
-# Questions:
   * `year, month, value ORDER BY value DESC`
   * `year, month, value ORDER BY value DESC`
 
@@ -206,9 +204,8 @@ print overTenTempDistinct.take(10)
  Row(yymm=u'1972-07', count=374)]
 ```
 
-# Assignment 3
+# Question 3:
 
-# Questions:
  * `year, month, station, avgMonthlyTemperature ORDER BY avgMonthlyTemperature DESC`
  
 ### Code:
@@ -279,9 +276,8 @@ Row(month=u'1994-07', station=95160, avg_temp=22.764516129032256),
 Row(month=u'1994-07', station=86200, avg_temp=22.711290322580645)]
 ```
 
-# Assignment 4
+# Question 4:
 
-# Questions:
  * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
  
 ### Code:
@@ -355,9 +351,8 @@ Row(station=71420, max_temp=30.0, max_precip=106.3),
 Row(station=52350, max_temp=30.0, max_precip=101.6)]
 ```
 
-# Assignment 5
+# Question 5:
 
-# Questions:
  * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
 
 ### Code:
@@ -438,9 +433,8 @@ print avgMthPrec.take(10)
  Row(month=u'2015-10', avg_precip=2.2625)]
 ```
 
-# Assignment 6
+# Question 6:
 
-# Questions:
  * `Year, month, difference ORDER BY year DESC, month DESC`
 
 ### Code:
