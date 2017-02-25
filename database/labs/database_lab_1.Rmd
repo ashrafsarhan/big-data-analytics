@@ -163,15 +163,29 @@ FROM jbemployee AS emp;
 ### 6. Which employees have a last name ending with “son”?
 
 ```{r eval=FALSE}
-SELECT emp.id, SUBSTRING_INDEX(emp.name , ',', 1) AS firstname, 
-SUBSTRING_INDEX(emp.name , ',', -1) AS lastname, emp.salary, 
-emp.manager, emp.birthyear, emp.startyear
+SELECT *
 FROM jb.jbemployee AS emp 
-WHERE SUBSTRING_INDEX(emp.name , ',', -1) LIKE '%son';
+WHERE emp.lastname LIKE '%son';
 ```
 
 \newpage
+#### According to my current schema the *jbemployee* table structure below which has only one column for the full name (firstname+lastname):
+```{r eval=FALSE}
+mysql> DESCRIBE jbemployee;
++-----------+-------------+------+-----+---------+-------+
+| Field     | Type        | Null | Key | Default | Extra |
++-----------+-------------+------+-----+---------+-------+
+| id        | int(11)     | NO   | PRI | NULL    |       |
+| name      | varchar(20) | YES  |     | NULL    |       |
+| salary    | int(11)     | YES  |     | NULL    |       |
+| manager   | int(11)     | YES  | MUL | NULL    |       |
+| birthyear | int(11)     | YES  |     | NULL    |       |
+| startyear | int(11)     | YES  |     | NULL    |       |
++-----------+-------------+------+-----+---------+-------+
+6 rows in set (0,00 sec)
+```
 
+#### So far, according to the correct schema which I don't have it. Even when I connect to my remote IDA MySQL schema, I couldn't find any tables. So, I assumed that the below table has the correct structure and I wrote my query based on it.
 ```{r eval=FALSE}
 +------+-----------+----------+--------+---------+-----------+-----------+
 | id   | firstname | lastname | salary | manager | birthyear | startyear |
