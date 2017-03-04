@@ -20,25 +20,38 @@ lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
-lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear and float(x[3]) > target_temp)
+observations = lines.filter(lambda observation:
+                               (int(observation[1][:4]) >= fromYear and
+                                int(observation[1][:4]) <= toYear)) \
+                       .cache()
 
-overTenMthTemp = lines.map(lambda x: (x[1][5:7], 1))
+"""
+Q2a. Year-month, number
+"""
+temperatures = observations.map(lambda observation:
+                                    (observation[1][:7], (float(observation[3]), 1))) \
+                               .filter(lambda (month, (temp, count)): temp > target_temp)
 
-overTenMthTempCounts = overTenMthTemp.reduceByKey(lambda v1,v2: v1 + v2)
+reading_counts = temperatures.reduceByKey(lambda (temp1, count1), (temp2, count2):
+                                              (temp1, count1 + count2)) \
+                                 .map(lambda (month, (temp, count)):(month, count))
 
-overTenMthTempCountsCsv = overTenMthTempCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
+reading_counts.repartition(1).saveAsTextFile(oFile)
 
-overTenMthTempCountsCsv.coalesce(1).saveAsTextFile(oFile)
+"""
+Q2b. Year-month, distinct number
+"""
+station_temperatures = observations.map(lambda observation:
+                                            (observation[1][:7],
+                                             (observation[0], float(observation[3])))) \
+                                       .filter(lambda (month, (station, temp)): temp > target_temp)
 
-###################### Distinct Counting Per Station ######################
-overTenStationTemp = lines.map(lambda x: (x[0], (x[1][5:7], float(x[3]))))
+year_station = station_temperatures.map(lambda (month, (station, temp)): (month, (station, 1))).distinct()
 
-overTenStationTempDistinct = overTenStationTemp.distinct()
+reading_counts = year_station.reduceByKey(lambda (station1, count1), (station2, count2):
+                                              (station1, count1 + count2)) \
+                                 .map(lambda (month, (station, count)): (month, count))
 
-overTenStationTempDistinctCounts = overTenStationTempDistinct.map(lambda x: (x[0], 1)).reduceByKey(lambda v1,v2: v1 + v2)
-
-overTenStationTempDistinctCountsCsv = overTenStationTempDistinctCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
-
-overTenStationTempDistinctCountsCsv.coalesce(1).saveAsTextFile(oFile2)
+reading_counts.repartition(1).saveAsTextFile(oFile2)
 
 
