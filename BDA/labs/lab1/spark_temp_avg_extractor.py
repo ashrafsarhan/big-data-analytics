@@ -18,14 +18,28 @@ lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
-lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear)
+observations = observations.filter(lambda observation:
+                                       (int(observation[1][:4]) >= fromYear and
+                                        int(observation[1][:4]) <= toYear))
 
-temperatures = lines.map(lambda x: (x[0]+','+x[1][5:7], (float(x[3]), 1)))
+stationDailyTemps = observations.map(lambda observation:
+                                                ((observation[1], observation[0]),
+                                                 (float(observation[3]), float(observation[3]))))
 
-stationMthTemp = temperatures.reduceByKey(lambda v1,v2: (v1[0]+v2[0], v1[1]+v2[1]))
+stationDailyMinMaxTemps = stationDailyTemps.reduceByKey(lambda
+                                                              (mintemp1, maxtemp1),
+                                                              (mintemp2, maxtemp2):
+                                                              (min(mintemp1, mintemp2),
+                                                               max(maxtemp1, maxtemp2)))
 
-stationAvgMthTemp = stationMthTemp.map(lambda a: (a[0], a[1][0]/a[1][1]))
+stationMonthlyAvgTemps = stationDailyMinMaxTemps.map(lambda ((day, station), (mintemp, maxtemp)):
+                                                           ((day[:7], station), (sum((mintemp, maxtemp)), 2))) \
+                                                      .reduceByKey(lambda (temp1, count1), (temp2, count2):
+                                                                   (temp1 + temp2, count1 + count2)) \
+                                                      .map(lambda ((month, station), (temp, count)):
+                                                           ((month, station), temp / float(count)))
 
-stationAvgMthTempCsv = stationAvgMthTemp.map(lambda a: '%s,%s' % (a[0], a[1]))
+stationMonthlyAvgTemps.repartition(1).saveAsTextFile(oFile)
 
-stationAvgMthTempCsv.coalesce(1).saveAsTextFile(oFile)
+    
+
