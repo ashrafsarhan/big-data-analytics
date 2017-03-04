@@ -2,14 +2,14 @@
 title: "732A54 - Big Data Analytics"
 subtitle: "BDA1 Spark Exercises"
 author: "Ashraf Sarhan (ashsa762)"
-date: "December 23, 2016"
 output: pdf_document
 ---
-## 1. What are the lowest and highest temperatures measured each year for the period 1950-2014. Provide the lists sorted in the descending order with respect to the maximum temperature. In this exercise you will use the `temperature-readings.csv` file. 
+# Question 1:
+  * What are the lowest and highest temperatures measured each year for the period 1950-2014. Provide the lists sorted in the descending order with respect to the maximum temperature. In this exercise you will use the `temperature-readings.csv` file. 
   * Non-parallelized program in Python to find the maximum temperatures for each year without using Spark. In this case you will run the program using: `python script.py`
-  
-### serial_mmt_extractor.py:
-```
+
+### Code (Non-parallelized):  
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -22,7 +22,8 @@ import time, argparse
 parser = argparse.ArgumentParser(description='MinMaxTempExtractor')
 parser.add_argument('-o', '--output', help='Output file', default='out_temp.csv')
 requiredNamed = parser.add_argument_group('Required arguments')
-requiredNamed.add_argument('-t', '--time', help='Time interval in years ex. 2005:2010', required=True)
+requiredNamed.add_argument('-t', '--time', help='Time interval in years ex. 2005:2010', 
+                           required=True)
 requiredNamed.add_argument('-i', '--input', help='Input file', required=True)
 args = parser.parse_args()
 iFile = args.input
@@ -66,16 +67,16 @@ sorted_temp.sort(key=lambda x: x[1][1][1], reverse=True)
 with open(oFile,'wb+') as f:
     for i in sorted_temp:
         #python will convert \n to os.linesep
-        f.write('%s,%s,%s,%s,%s\n' % (i[0], i[1][0][0], i[1][0][1], i[1][1][0], i[1][1][1]))
+        f.write('%s,%s,%s,%s,%s\n' % (i[0], i[1][0][0], i[1][0][1], i[1][1][0], 
+                                      i[1][1][1]))
 #close the file after writting the lines.  
 f.close()
 end = time.time()
 print('Done in %s seconds' % (end - start))
 ```
 
-### spark_mmt_extractor.py:
-
-```
+### Code (Spark):  
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -120,9 +121,8 @@ sortedMinMaxTempCsv = sortedMinMaxTemp.map(lambda a: '%s,%s,%s,%s,%s' \
 sortedMinMaxTempCsv.coalesce(1).saveAsTextFile(oFile)
 ```
 
-### output:
-
-```
+### The lowest and highest temperatures:
+```{r eval=FALSE}
 year,station,min,station,max
 1975,157860,-37.0,86200,36.1
 1992,179960,-36.1,63600,35.4
@@ -137,11 +137,12 @@ year,station,min,station,max
 ```
 
  * It's clearly appears that the Spark parallel version (1.5 min) takes much less time than the serial one (5 min) as this the main benefits of multiprocessing environment. 
- 
-## 2. Count the number of readings for each month in the period of 1950-2014 which are higher than 10 degrees. Repeat the exercise, this time taking only distinct readings from each station. That is, if a station reported a reading above 10 degrees in some month, then it appears only once in the count for that month.  
 
-### spark_temp_count_extractor.py:
-```
+# Question 2: 
+ * Count the number of readings for each month in the period of 1950-2014 which are higher than 10 degrees. Repeat the exercise, this time taking only distinct readings from each station. That is, if a station reported a reading above 10 degrees in some month, then it appears only once in the count for that month.  
+
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -164,52 +165,78 @@ lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
-lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear \ 
-and float(x[3]) > target_temp)
+observations = lines.filter(lambda observation:
+                               (int(observation[1][:4]) >= fromYear and
+                                int(observation[1][:4]) <= toYear)) \
+                       .cache()
 
-overTenMthTemp = lines.map(lambda x: (x[1][5:7], 1))
+"""
+Q2a. Year-month, number
+"""
+temperatures = observations.map(lambda observation:
+                                    (observation[1][:7], (float(observation[3]), 1))) \
+                               .filter(lambda (month, (temp, count)): temp > target_temp)
 
-overTenMthTempCounts = overTenMthTemp.reduceByKey(lambda v1,v2: v1 + v2)
+reading_counts = temperatures.reduceByKey(lambda (temp1, count1), (temp2, count2):
+                                              (temp1, count1 + count2)) \
+                                 .map(lambda (month, (temp, count)):(month, count))
 
-overTenMthTempCountsCsv = overTenMthTempCounts.map(lambda a: '%s,%s' % (a[0], a[1]))
+reading_counts.repartition(1).saveAsTextFile(oFile)
 
-overTenMthTempCountsCsv.coalesce(1).saveAsTextFile(oFile)
+"""
+Q2b. Year-month, distinct number
+"""
+station_temperatures = observations.map(lambda observation:
+                                            (observation[1][:7],
+                                             (observation[0], float(observation[3])))) \
+                                       .filter(lambda (month, (station, temp)): 
+                                                 temp > target_temp)
 
-###################### Distinct Counting Per Station ######################
-overTenStationTemp = lines.map(lambda x: (x[0], (x[1][5:7], float(x[3]))))
+year_station = station_temperatures.map(lambda (month, (station, temp)): 
+                                          (month, (station, 1))).distinct()
 
-overTenStationTempDistinct = overTenStationTemp.distinct()
+reading_counts = year_station.reduceByKey(lambda (station1, count1), (station2, count2):
+                                              (station1, count1 + count2)) \
+                                 .map(lambda (month, (station, count)): (month, count))
 
-overTenStationTempDistinctCounts = overTenStationTempDistinct. \ 
-map(lambda x: (x[0], 1)).reduceByKey(lambda v1,v2: v1 + v2)
-
-overTenStationTempDistinctCountsCsv = overTenStationTempDistinctCounts. \ 
-map(lambda a: '%s,%s' % (a[0], a[1]))
-
-overTenStationTempDistinctCountsCsv.coalesce(1).saveAsTextFile(oFile2)
+reading_counts.repartition(1).saveAsTextFile(oFile2)
 ```
 
-### output:
-
+### Count of the readings above 10 degrees for each month:
+```{r eval=FALSE}
+print reading_counts.take(10)
+[(u'1967-07', 53813), 
+(u'1974-07', 66277), 
+(u'2003-05', 48264), 
+(u'1978-03', 306), 
+(u'1981-10', 9882), 
+(u'1983-09', 38692), 
+(u'1987-05', 17191), 
+(u'1979-04', 1684), 
+(u'2009-07', 133008), 
+(u'1986-11', 1198)]
 ```
-station,count
-72080,1137
-133230,476
-95160,1114
-68560,821
-83620,940
-74240,1050
-83170,837
-103080,1117
-134150,906
-62140,758
+
+### Distinct count of the readings above 10 degrees for each month:
+```{r eval=FALSE}
+print reading_counts.take(10)
+[(u'1997-04', 190), 
+(u'1974-07', 362), 
+(u'2003-05', 321), 
+(u'1981-10', 325), 
+(u'1983-09', 332), 
+(u'1987-05', 320), 
+(u'1979-04', 227), 
+(u'2009-07', 312), 
+(u'1986-11', 138), 
+(u'1966-08', 359)]
 ```
 
-## 3. Find the average monthly temperature for each available station in Sweden. Your result should include average temperature for each station for each month in the period of 1960-2014. Bear in mind that not every station has the readings for each month in this timeframe.
+# Question 3:
+ * Find the average monthly temperature for each available station in Sweden. Your result should include average temperature for each station for each month in the period of 1960-2014. Bear in mind that not every station has the readings for each month in this timeframe.
 
-### spark_temp_avg_extractor.py:
-
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -230,41 +257,57 @@ lines = sc.textFile(iFile)
 
 lines = lines.map(lambda a: a.split(";"))
 
-lines = lines.filter(lambda x: int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear)
+observations = observations.filter(lambda observation:
+                                       (int(observation[1][:4]) >= fromYear and
+                                        int(observation[1][:4]) <= toYear))
 
-temperatures = lines.map(lambda x: (x[0]+','+x[1][5:7], (float(x[3]), 1)))
+stationDailyTemps = observations.map(lambda observation:
+                                                ((observation[1], observation[0]),
+                                                 (float(observation[3]), 
+                                                  float(observation[3]))))
 
-stationMthTemp = temperatures.reduceByKey(lambda v1,v2: (v1[0]+v2[0], v1[1]+v2[1]))
+stationDailyMinMaxTemps = stationDailyTemps.reduceByKey(lambda
+                                                        (mintemp1, maxtemp1),
+                                                        (mintemp2, maxtemp2):
+                                                        (min(mintemp1, mintemp2),
+                                                        max(maxtemp1, maxtemp2)))
 
-stationAvgMthTemp = stationMthTemp.map(lambda a: (a[0], a[1][0]/a[1][1]))
+stationMonthlyAvgTemps = stationDailyMinMaxTemps.map(lambda ((day, station), 
+                                                             (mintemp, maxtemp)):
+                                                           ((day[:7], station), 
+                                                            (sum((mintemp, maxtemp)), 2))) \
+                                                      .reduceByKey(lambda (temp1, count1), 
+                                                                   (temp2, count2):
+                                                                   (temp1 + temp2, 
+                                                                    count1 + count2)) \
+                                                      .map(lambda ((month, station), 
+                                                                   (temp, count)):
+                                                                   ((month, station), 
+                                                                   temp / float(count)))
 
-stationAvgMthTempCsv = stationAvgMthTemp.map(lambda a: '%s,%s' % (a[0], a[1]))
-
-stationAvgMthTempCsv.coalesce(1).saveAsTextFile(oFile)
+stationMonthlyAvgTemps.repartition(1).saveAsTextFile(oFile)
 ```
 
-### output:
-
-```
-station,month,avgTemp
-134100,11,-2.29005847953
-115220,06,13.0421685863
-155710,02,-9.1140943194
-54990,05,12.1786961583
-138400,01,-8.6290626902
-96000,01,-2.4259727303
-83170,03,0.343137254902
-158850,02,-11.0974036317
-104300,09,8.7858941528
-77180,09,12.7023285199
-
+### Station average monthly temperature:
+```{r eval=FALSE}
+print stationMonthlyAvgTemps.take(10)
+[((u'2001-01', u'63280'), 0.0032258064516128633), 
+((u'1969-03', u'83620'), -4.780645161290321), 
+((u'1978-09', u'156730'), 5.5566666666666675), 
+((u'1991-11', u'106500'), -0.051666666666666645), 
+((u'1995-06', u'112080'), 12.001666666666669), 
+((u'1998-05', u'172770'), 5.282258064516128), 
+((u'2003-06', u'177930'), 8.711666666666668), 
+((u'1976-10', u'89240'), 6.138709677419355), 
+((u'2001-02', u'159770'), -14.35), 
+((u'1963-07', u'53560'), 17.738709677419358)]
 ```
 
-## 4. Provide a list of stations with their associated maximum measured temperatures and maximum measured daily precipitation. Show only those stations where the maximum temperature is between 25 and 30 degrees and maximum daily precipitation is between 100 mm and 200 mm.
+# Question 4:
+ * Provide a list of stations with their associated maximum measured temperatures and maximum measured daily precipitation. Show only those stations where the maximum temperature is between 25 and 30 degrees and maximum daily precipitation is between 100 mm and 200 mm.
 
-### spark_max_temp_prec_extractor.py:
-
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -303,8 +346,8 @@ maxTempPrecCsv = maxTempPrec.map(lambda a: '%s,%s,%s' % (a[0], a[1][0], a[1][1])
 maxTempPrec.coalesce(1).saveAsTextFile(oFile)
 ```
 
-### output:
-```
+### stations maximum measured daily temperatures/precipitation:
+```{r eval=FALSE}
 station,maxTemp,maxPrec
 128510,29.5,None
 192830,29.5,None 
@@ -318,10 +361,11 @@ station,maxTemp,maxPrec
 147560,29.9,None
 ```
 
-## 5. Calculate the average monthly precipitation for the Östergotland region (list of stations is provided in the separate file). In order to do this, you will first need to calculate the total monthly precipitation for each station before calculating the monthly average (by averaging over stations).
+# Question 5:
+ * Calculate the average monthly precipitation for the Östergotland region (list of stations is provided in the separate file). In order to do this, you will first need to calculate the total monthly precipitation for each station before calculating the monthly average (by averaging over stations).
 
-### spark_ostergot_avg_prec_extractor.py:
-```
+### Code:
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -365,8 +409,8 @@ monthly_precipitations_csv = monthly_precipitations.map(lambda a: '%s,%s' % (a[0
 monthly_precipitations_csv.coalesce(1).saveAsTextFile(oFile)
 ```
 
-### output:
-```
+### Östergotland average monthly precipitation:
+```{r eval=FALSE}
 station,year,month,avgPrec
 85460,1996,04,0.506666666667 
 75520,2004,12,0.648387096774 
@@ -380,10 +424,11 @@ station,year,month,avgPrec
 87140,2000,06,1.68666666667
 ```
 
-## 6. Compare the average monthly temperature (find the difference) in the period 1950-2014 for all stations in Östergotland with long-term monthly averages in the period of 1950-1980.
+# Question 6:
+ * Compare the average monthly temperature (find the difference) in the period 1950-2014 for all stations in Östergotland with long-term monthly averages in the period of 1950-1980.
 
 ### spark_ostergot_avg_temp_diff_extractor.py:
-```
+```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
@@ -396,61 +441,74 @@ from pyspark import SparkContext
 iFile = 'data/stations-Ostergotland.csv'
 iFile2 = 'data/temperature-readings.csv'
 oFile = 'data/OstergotlandAvgMonthlyDiffTemp'
+fromYear = 1960
+toYear = 2014
 
 sc = SparkContext(appName="OstergotlandAvgMonthlyTempDiffSparkJob")
 
 ostergotlandStations = sc.textFile(iFile)
 
 ostergotlandStations = ostergotlandStations.map(lambda line: line.split(";")). \
-map(lambda x: int(x[0])).distinct().collect()
+                                            map(lambda x: int(x[0])).distinct().collect()
 
 isOstergotlandStation = (lambda s: s in ostergotlandStations)
 
-temperatures = sc.textFile(iFile2)
+temperatures = sc.textFile(iFile2).map(lambda line: line.split(";")). \
+                                  filter(lambda x: isOstergotlandStation(int(x[0])) 
+                                         and int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <= toYear)
 
-temperatures = temperatures.map(lambda line: line.split(";")). \
-filter(lambda x: isOstergotlandStation(int(x[0])) and \
-int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <= 2014)
+monthlyAvgTemps = temperatures.map(lambda obs:
+                                             ((obs[1], int(obs[0])),
+                                                    (float(obs[3]), float(obs[3])))) \
+                                              .reduceByKey(lambda (mint1, maxt1), 
+                                                                  (mint2, maxt2):
+                                                                  (min(mint1, mint2), 
+                                                                   max(maxt1, maxt2))) \
+                                              .map(lambda ((day, station), (mint, maxt)):
+                                                   (day[:7], (mint + maxt, 2))) \
+                                              .reduceByKey(lambda (temp1, count1), 
+                                                                  (temp2, count2):
+                                                                  (temp1 + temp2, 
+                                                                   count1 + count2)) \
+                                              .map(lambda (month, (temp, count)):
+                                                          (month, temp / float(count)))
 
-daily_temperatures = temperatures.map(lambda x: (x[1], (float(x[3]), float(x[3])))). \
-reduceByKey(lambda t1, t2: (min(t1[0], t2[0]), max(t1[1], t2[1])))
+monthlyLongtermAvgTemps = monthlyAvgTemps.filter(lambda (month, temp):
+                                                    int(month[:4]) <= 1980) \
+                                            .map(lambda (month, temp):
+                                                 (month[-2:], (temp, 1))) \
+                                            .reduceByKey(lambda (temp1, count1), 
+                                                                (temp2, count2):
+                                                                (temp1 + temp2, 
+                                                                 count1 + count2)) \
+                                            .map(lambda (month, (temp, count)):
+                                                        (month, temp / float(count)))
 
-monthly_temperatures = daily_temperatures.map(lambda x:(x[0].split("-")[0]+', \
-'+x[0].split("-")[1], (x[1][0]+x[1][1], 2)))
+month_temp = {month: temp for month, temp in monthlyLongtermAvgTemps.collect()}
 
-monthly_temperatures = monthly_temperatures. \
-reduceByKey(lambda v1, v2: (v1[0] + v2[0], v1[1] + v2[1]))
+monthlyAvgTemps = monthlyAvgTemps.map(lambda (month, temp):
+                                        (month, abs(temp) - abs(month_temp[month[-2:]]))) \
+                                 .sortBy(ascending=True, keyfunc=lambda (month, temp): month)
 
-monthly_avg_temperatures = monthly_temperatures.map(lambda x: (x[0], x[1][0] / x[1][1]))
+monthlyAvgTempsCsv = monthlyAvgTemps.map(lambda a: '%s,%s,%s' % 
+                                         (a[0].split('-')[0], a[0].split('-')[1], a[1]))
 
-longterm_monthly_avg_temperatures = monthly_avg_temperatures. \
-filter(lambda x: int(x[0].split(",")[0]) >= 1950 and int(x[0].split(",")[0]) <= 1980). \
-map(lambda x: (x[0].split(",")[1], (x[1], 1))). \ 
-reduceByKey(lambda t1, t2:(t1[0] + t2[0], t1[1] + t2[1])).map(lambda t: (t[0], t[1][0]/t[1][1]))
-
-longTermAvgTempLookup = {month: temp for month, temp in longterm_monthly_avg_temperatures.collect()}
-
-final_res = monthly_avg_temperatures.map(lambda x: (x[0], x[1] - \ 
-longTermAvgTempLookup[x[0].split(",")[1]]))
-
-monthly_avg_diff_temperatures_csv = final_res.map(lambda a: '%s,%s' % (a[0], a[1]))
-
-monthly_avg_diff_temperatures_csv.coalesce(1).saveAsTextFile(oFile)
+monthlyAvgTempsCsv.repartition(1).saveAsTextFile(oFile)
 ```
 
-### output:
-```
-year,month,tempDiff
-1992,06,0.611666666667 
-1967,11,1.51274193548 
-1993,09,-3.8173655914 
-1970,02,-7.51101223582 
-1998,04,-1.05983870968 
-1966,01,-3.92185223725 
-2001,06,-2.445 
-2002,07,0.460926118626 
-1971,12,2.77164412071 
-1991,07,0.851248699272
+### Östergotland average monthly temperature compared with long-term monthly averages:
+```{r eval=FALSE}
+print monthlyAvgTempsCsv.take(10)
+[u'1960,01,0.761463766648', 
+u'1960,02,1.5272002457', 
+u'1960,03,0.192050448272', 
+u'1960,04,-0.642024384346', 
+u'1960,05,0.157772987381', 
+u'1960,06,-0.237311108204', 
+u'1960,07,-1.28047382725', 
+u'1960,08,-0.985763468482', 
+u'1960,09,0.00674101691958', 
+u'1960,10,-1.34710218737']
 ```
 
 ### plot:
