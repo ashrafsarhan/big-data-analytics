@@ -138,6 +138,8 @@ year,station,min,station,max
 
  * It's clearly appears that the Spark parallel version (1.5 min) takes much less time than the serial one (5 min) as this the main benefits of multiprocessing environment. 
 
+\newpage
+
 # Question 2: 
  * Count the number of readings for each month in the period of 1950-2014 which are higher than 10 degrees. Repeat the exercise, this time taking only distinct readings from each station. That is, if a station reported a reading above 10 degrees in some month, then it appears only once in the count for that month.  
 
@@ -231,6 +233,8 @@ print reading_counts.take(10)
 (u'1986-11', 138), 
 (u'1966-08', 359)]
 ```
+
+\newpage
 
 # Question 3:
  * Find the average monthly temperature for each available station in Sweden. Your result should include average temperature for each station for each month in the period of 1960-2014. Bear in mind that not every station has the readings for each month in this timeframe.
@@ -424,10 +428,12 @@ station,year,month,avgPrec
 87140,2000,06,1.68666666667
 ```
 
+\newpage
+
 # Question 6:
  * Compare the average monthly temperature (find the difference) in the period 1950-2014 for all stations in Östergotland with long-term monthly averages in the period of 1950-1980.
 
-### spark_ostergot_avg_temp_diff_extractor.py:
+### Code:
 ```{r eval=FALSE}
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
