@@ -45,14 +45,15 @@ combinedTempPrec = sqlContext.sql(
         GROUP BY day, station
         ) AS pr
         ON tr.station = pr.station
-        WHERE temp >= 25 AND temp <= 30
-        AND precip >= 100 AND precip <= 200
         GROUP BY tr.station
-        ORDER BY tr.station DESC
+        HAVING max_temp >= 25 AND
+               max_temp <= 30 AND
+               max_precip >= 100 AND
+               max_precip <= 200
         """
     )
 
-combinedTempPrec.rdd.repartition(1).sortBy(ascending=False, 
+tempPrec = combinedTempPrec.rdd.repartition(1).sortBy(ascending=False, 
                         keyfunc=lambda (station, temp, precip): station)
 
-combinedTempPrec.saveAsTextFile(oFile)
+tempPrec.saveAsTextFile(oFile)
