@@ -52,6 +52,4 @@ overTenTempDistinct = overTenTempDistinct.rdd.repartition(1) \
                             .sortBy(ascending = False, keyfunc = lambda \
                                     (yymm, counts): counts)
 
-print overTenTempDistinct.take(10)
 overTenTempDistinct.saveAsTextFile(oFile)
-
