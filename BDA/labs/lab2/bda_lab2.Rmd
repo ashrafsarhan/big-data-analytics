@@ -22,10 +22,12 @@ from pyspark import SparkContext
 from pyspark.sql import SQLContext, Row
 
 iFile = 'data/temperature-readings.csv'
-oFile1 = 'data/sql_max_temperature'
-oFile2 = 'data/sql_max_temperature'
-oFile3 = 'data/sql_min_temperature'
-oFile4 = 'data/sql_min_temperature_2'
+oFile1 = 'data/sql_max_temperature_1'
+oFile2 = 'data/sql_max_temperature_2'
+oFile3 = 'data/sql_min_temperature_3'
+oFile4 = 'data/sql_min_temperature_4'
+fromYear = 1950
+toYear = 2014
 
 sc = SparkContext(appName = "MinMaxTempExtractorSparkSQLJob")
 
@@ -33,6 +35,9 @@ sqlContext = SQLContext(sc)
 
 inFile = sc.textFile(iFile) \
             .map(lambda line: line.split(";")) \
+            .filter(lambda obs:
+                               (int(obs[1][:4]) >= fromYear and
+                                int(obs[1][:4]) <= toYear)) \
             .map(lambda obs: \
                 Row(station = obs[0], date = obs[1],  \
                     year = obs[1].split("-")[0], time = obs[2],
@@ -63,8 +68,11 @@ maxTemp = sqlContext.sql("""
         """
         )
 
-maxTemp.rdd.repartition(1) \
-		     .sortBy(ascending=False, keyfunc=lambda (year, temp): temp)
+maxTemp = maxTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                               (year, station, temp): temp)
+
+maxTemp.take(10)
 
 maxTemp.saveAsTextFile(oFile1)
 
@@ -84,34 +92,36 @@ maxTemp2 = sqlContext.sql(
 maxTemp2.rdd.repartition(1) \
 		     .sortBy(ascending=False, keyfunc=lambda (year, temp): temp)
 
-maxTemp2..saveAsTextFile(oFile2)
+maxTemp2.take(10)
+
+maxTemp2.saveAsTextFile(oFile2)
 
 """
 Q2.1 year, station with the min, minValue ORDER BY minValue DESC
 """
-inFile = sc.textFile(iFile) \
-            .map(lambda line: line.split(";")) \
-            .map(lambda obs: \
-                Row(station = obs[0], \
-                    date = obs[1],  \
-                    year = int(obs[1].split("-")[0]), \
-                    time = obs[2],
-                    temp = float(obs[3]), \
-                    quality = obs[4]))
+minTemp = sqlContext.sql("""
+        SELECT DISTINCT(table1.year) AS year,
+                FIRST(table1.station) AS station,
+                FIRST(temp) AS temp
+        FROM TempSchema AS table1
+        INNER JOIN
+        (
+        SELECT year, MIN(temp) AS min_temp
+        FROM TempSchema
+        GROUP BY year
+        ) AS table2
+        ON table1.year = table2.year
+        WHERE table1.temp = table2.min_temp
+        GROUP BY table1.year
+        ORDER BY temp DESC
+        """
+        )
 
-tempSchema = sqlContext.createDataFrame(inFile)
+minTemp = minTemp.rdd.repartition(1)\
+                    .sortBy(ascending = False, keyfunc = lambda \
+                               (year, station, temp): temp)
 
-tempSchema.registerTempTable("TempSchema")
-
-minTemp = tempSchema.filter(tempSchema.year <= toYear) \
-                        .filter(tempSchema.year >= fromYear) \
-                        .groupBy(tempSchema.year, tempSchema.station) \
-                        .agg(F.min(tempSchema.temp).alias("minTemp")) \
-                        .select("year", "station", "minTemp")
-
-minTemp = minTemp.rdd.repartition(1) \
-                .sortBy(ascending = False, keyfunc = lambda \
-                    (year, station, minTemp): minTemp)
+minTemp.take(10)
 
 minTemp.saveAsTextFile(oFile3)
 
@@ -121,15 +131,17 @@ Q2.2 year, station with the min, minValue ORDER BY minValue DESC
 """
 minTemp2 = sqlContext.sql(
         """
-        SELECT station, year, MIN(temp) AS temp
+        SELECT year, MIN(temp) AS temp
         FROM TempSchema
-        GROUP BY station, year
+        GROUP BY year
         ORDER BY temp DESC
         """
     )
 
 minTemp2.rdd.repartition(1) \
-		     .sortBy(ascending=False, keyfunc=lambda (year, station, temp): temp)
+		     .sortBy(ascending=False, keyfunc=lambda (year, temp): temp)
+
+minTemp2.take(10)
 
 minTemp2.saveAsTextFile(oFile4)
 ```
@@ -139,29 +151,58 @@ minTemp2.saveAsTextFile(oFile4)
 
 ### Max Temp:
 ```{r eval=FALSE}
-print maxTemp.take(10)
+maxTemp.take(10)
 [Row(year=u'1975', station=u'86200', temp=36.1), 
- Row(year=u'1992', station=u'63600', temp=35.4), 
- Row(year=u'1994', station=u'117160', temp=34.7), 
- Row(year=u'2014', station=u'96560', temp=34.4), 
- Row(year=u'2010', station=u'75250', temp=34.4)]
+Row(year=u'1992', station=u'63600', temp=35.4), 
+Row(year=u'1994', station=u'117160', temp=34.7), 
+Row(year=u'2014', station=u'96560', temp=34.4), 
+Row(year=u'2010', station=u'75250', temp=34.4),
+Row(year=u'1989', station=u'63050', temp=33.9), 
+Row(year=u'1982', station=u'94050', temp=33.8), 
+Row(year=u'1968', station=u'137100', temp=33.7), 
+Row(year=u'1966', station=u'151640', temp=33.5), 
+Row(year=u'2002', station=u'78290', temp=33.3)]
+
+maxTemp2.take(10)
+[Row(year=u'1975', temp=36.1), 
+Row(year=u'1992', temp=35.4), 
+Row(year=u'1994', temp=34.7), 
+Row(year=u'2010', temp=34.4), 
+Row(year=u'2014', temp=34.4), 
+Row(year=u'1989', temp=33.9), 
+Row(year=u'1982', temp=33.8), 
+Row(year=u'1968', temp=33.7), 
+Row(year=u'1966', temp=33.5), 
+Row(year=u'1983', temp=33.3)]
 ```
 
-\newpage
+
 
 ### Min Temp:
 ```{r eval=FALSE}
-print minTemp.take(10)
-[Row(year=2010, station=u'95530', minTemp=15.2), 
-Row(year=1979, station=u'99090', minTemp=13.1), 
-Row(year=1984, station=u'53220', minTemp=12.0), 
-Row(year=2001, station=u'117160', minTemp=8.0), 
-Row(year=2010, station=u'89560', minTemp=7.9), 
-Row(year=1998, station=u'104390', minTemp=7.5), 
-Row(year=1986, station=u'84390', minTemp=5.3), 
-Row(year=2009, station=u'71140', minTemp=4.9), 
-Row(year=1970, station=u'107530', minTemp=4.1), 
-Row(year=1951, station=u'149160', minTemp=3.4)]
+minTemp.take(10)
+[Row(year=u'1990', station=u'147270', temp=-35.0), 
+Row(year=u'1952', station=u'192830', temp=-35.5), 
+Row(year=u'1974', station=u'166870', temp=-35.6), 
+Row(year=u'1954', station=u'113410', temp=-36.0), 
+Row(year=u'1992', station=u'179960', temp=-36.1), 
+Row(year=u'1975', station=u'157860', temp=-37.0), 
+Row(year=u'1972', station=u'167860', temp=-37.5), 
+Row(year=u'1995', station=u'182910', temp=-37.6), 
+Row(year=u'2000', station=u'169860', temp=-37.6), 
+Row(year=u'1957', station=u'159970', temp=-37.8)]
+
+minTemp2.take(10)
+[Row(year=u'1990', temp=-35.0), 
+Row(year=u'1952', temp=-35.5), 
+Row(year=u'1974', temp=-35.6), 
+Row(year=u'1954', temp=-36.0), 
+Row(year=u'1992', temp=-36.1), 
+Row(year=u'1975', temp=-37.0), 
+Row(year=u'1972', temp=-37.5), 
+Row(year=u'1995', temp=-37.6), 
+Row(year=u'2000', temp=-37.6), 
+Row(year=u'1957', temp=-37.8)]
 ```
 
 # Question 2:
@@ -243,7 +284,7 @@ print overTenTempDistinct.take(10)
  Row(yymm=u'1972-07', count=374)]
 ```
 
-\newpage
+
 
 # Question 3:
 
@@ -342,56 +383,58 @@ sc = SparkContext(appName="MaxTempPrecExtractorSparkSQLJob")
 sqlContext = SQLContext(sc)
 
 # Temperatures
-inFile = sc.textFile(iFile).map(lambda line: line.split(";")) \
+temperature_data = sc.textFile(iFile)
+temperature_obs = temperature_data.map(lambda line: line.split(";")) \
                                       .map(lambda obs: Row(station=int(obs[0]),
                                                            temp=float(obs[3])))
-
-tempSchema = sqlContext.createDataFrame(inFile)
-tempSchema.registerTempTable("TempSchema")
+schema_temp_readings = sqlContext.createDataFrame(temperature_obs)
+schema_temp_readings.registerTempTable("temp_readings")
 
 # precipitation
-inFile2 = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+precipitation_data = sc.textFile(iFile2)
+precipitation_obs = precipitation_data.map(lambda line: line.split(";")) \
                                           .map(lambda obs: Row(station=int(obs[0]),
                                                                day=obs[1],
                                                                precip=float(obs[3])))
+schema_precip_readings = sqlContext.createDataFrame(precipitation_obs)
+schema_precip_readings.registerTempTable("precip_readings")
 
-precSchema = sqlContext.createDataFrame(inFile2)
-precSchema.registerTempTable("PrecSchema")
-
-combinedTempPrec = sqlContext.sql(
+combined = sqlContext.sql(
         """
         SELECT tr.station, MAX(temp) AS max_temp, MAX(precip) AS max_precip
-        FROM
-        TempSchema AS tr
+        FROM temp_readings AS tr
         INNER JOIN
         (
         SELECT station, SUM(precip) AS precip
-        FROM PrecSchema
+        FROM precip_readings
         GROUP BY day, station
         ) AS pr
         ON tr.station = pr.station
+        WHERE (temp >= 25 AND temp <= 30)
+        AND (precip >= 100 AND precip <= 200)
         GROUP BY tr.station
-        HAVING max_temp >= 25 AND
-               max_temp <= 30 AND
-               max_precip >= 100 AND
-               max_precip <= 200
         ORDER BY tr.station DESC
         """
-    )
+        )
+
+tempPrec = combined.rdd.repartition(1) \
+		.sortBy(ascending=False, keyfunc=lambda (station, temp, precip): station) 
+     
+tempPrec.take(10)
 
 tempPrec.saveAsTextFile(oFile)
 ```
 
-### Note:
-* As we have a condition on the aggregation function _Max(temp)_ and _Max(precip)_, it should be under _HAVING_ clause and not _WHERE_ clause.
-
 ### Max daily temperatures/precipitation:
 ```{r eval=FALSE}
-tempPrec.take(5)
-[]
+tempPrec.take(10)
+[Row(station=97510, max_temp=30.0, max_precip=103.99999999999999), 
+Row(station=75250, max_temp=30.0, max_precip=101.8), 
+Row(station=71420, max_temp=30.0, max_precip=106.3), 
+Row(station=52350, max_temp=30.0, max_precip=101.6)]
 ```
 
-\newpage
+
 
 # Question 5:
 

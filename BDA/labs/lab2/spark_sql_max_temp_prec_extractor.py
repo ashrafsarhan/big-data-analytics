@@ -17,43 +17,43 @@ sc = SparkContext(appName="MaxTempPrecExtractorSparkSQLJob")
 sqlContext = SQLContext(sc)
 
 # Temperatures
-inFile = sc.textFile(iFile).map(lambda line: line.split(";")) \
+temperature_data = sc.textFile(iFile)
+temperature_obs = temperature_data.map(lambda line: line.split(";")) \
                                       .map(lambda obs: Row(station=int(obs[0]),
                                                            temp=float(obs[3])))
-
-tempSchema = sqlContext.createDataFrame(inFile)
-tempSchema.registerTempTable("TempSchema")
+schema_temp_readings = sqlContext.createDataFrame(temperature_obs)
+schema_temp_readings.registerTempTable("temp_readings")
 
 # precipitation
-inFile2 = sc.textFile(iFile2).map(lambda line: line.split(";")) \
+precipitation_data = sc.textFile(iFile2)
+precipitation_obs = precipitation_data.map(lambda line: line.split(";")) \
                                           .map(lambda obs: Row(station=int(obs[0]),
                                                                day=obs[1],
                                                                precip=float(obs[3])))
+schema_precip_readings = sqlContext.createDataFrame(precipitation_obs)
+schema_precip_readings.registerTempTable("precip_readings")
 
-precSchema = sqlContext.createDataFrame(inFile2)
-precSchema.registerTempTable("PrecSchema")
-
-combinedTempPrec = sqlContext.sql(
+combined = sqlContext.sql(
         """
         SELECT tr.station, MAX(temp) AS max_temp, MAX(precip) AS max_precip
-        FROM
-        TempSchema AS tr
+        FROM temp_readings AS tr
         INNER JOIN
         (
         SELECT station, SUM(precip) AS precip
-        FROM PrecSchema
+        FROM precip_readings
         GROUP BY day, station
         ) AS pr
         ON tr.station = pr.station
+        WHERE (temp >= 25 AND temp <= 30)
+        AND (precip >= 100 AND precip <= 200)
         GROUP BY tr.station
-        HAVING max_temp >= 25 AND
-               max_temp <= 30 AND
-               max_precip >= 100 AND
-               max_precip <= 200
+        ORDER BY tr.station DESC
         """
-    )
+        )
 
-tempPrec = combinedTempPrec.rdd.repartition(1).sortBy(ascending=False, 
-                        keyfunc=lambda (station, temp, precip): station)
+tempPrec = combined.rdd.repartition(1) \
+		.sortBy(ascending=False, keyfunc=lambda (station, temp, precip): station) 
+     
+tempPrec.take(10)
 
 tempPrec.saveAsTextFile(oFile)
