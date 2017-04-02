@@ -2,7 +2,7 @@
 title: "732A54 Big Data Analytics"
 author: "Ashraf Sarhan"
 date: "December 25, 2016"
-output: html_document
+output: pdf_document
 subtitle: ' Examples of Exam Questions'
 ---
 
@@ -317,5 +317,3 @@ be transferred to new neighbor
         + Lost partitions are rebuilt in parallel
         + If a task is slow, it could be run on another node
         + Recovery is supported for both SQL and machine learning user defined functions
-        
-### 6. Parallel Computing:        
